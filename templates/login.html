@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Word Scramble - Enter PIN{% endblock %}
+
+{% block content %}
+<div class="flex flex-col items-center pt-16">
+    <img src="{{ url_for('static', filename='images/creature.svg') }}"
+         alt="Game mascot" class="w-32 h-32 mb-6 animate-drop-in">
+    <h1 class="text-4xl font-bold text-white mb-8">Enter your PIN</h1>
+
+    <form method="post" class="game-card p-8 w-full max-w-sm text-center">
+        <input type="password" name="pin" inputmode="numeric" autocomplete="current-password"
+               autofocus aria-label="PIN"
+               class="w-full text-center text-3xl tracking-[0.4em] bg-[var(--bg-secondary)] text-white
+                      rounded-xl py-4 mb-4 border border-white/20 focus:outline-none
+                      focus:border-[var(--glow-blue)]">
+
+        {% if error %}
+        <p class="text-[var(--tile-orange)] mb-4">{{ error }}</p>
+        {% endif %}
+
+        <button type="submit"
+                class="btn-glow bg-[var(--glow-blue)] text-white py-3 px-8 rounded-xl text-xl font-bold w-full">
+            Let's Play
+        </button>
+    </form>
+</div>
+{% endblock %}

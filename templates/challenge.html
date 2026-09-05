@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Word Scramble - Challenge Words{% endblock %}
+
+{% block content %}
+<div x-data="roundStarter()" class="flex flex-col items-center pt-8">
+
+    <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">Challenge Words</h1>
+    <p class="text-[var(--text-muted)] text-lg mb-8">Words that need a little more practice</p>
+
+    {% if words %}
+    <!-- Play Challenge Round Button -->
+    <button
+        @click="start(5, 'challenge')"
+        :disabled="loading"
+        class="btn-glow bg-[var(--tile-orange)] text-white py-4 px-10 rounded-2xl text-2xl font-bold mb-10 disabled:opacity-50">
+        ⚡ Play Challenge Round
+    </button>
+
+    <!-- Pattern callout -->
+    {% if patterns %}
+    <div class="w-full game-card p-6 mb-8 border border-[var(--glow-purple)]/40">
+        <div class="text-[var(--glow-purple)] font-bold text-xl mb-3">🔍 Spotted a Pattern!</div>
+        <p class="text-[var(--text-muted)] mb-4">These words share a common ending — practicing them together can help!</p>
+        <div class="flex flex-wrap gap-3">
+            {% for suffix, count in patterns.items() %}
+            <div class="bg-[var(--bg-secondary)] rounded-xl px-4 py-2">
+                <span class="text-white font-bold text-lg">-{{ suffix }}</span>
+                <span class="text-[var(--text-muted)] text-sm ml-2">{{ count }} words</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Word list -->
+    <div class="w-full flex flex-col gap-3">
+        {% for w in words %}
+        <div class="game-card p-4 flex items-center gap-4">
+            <!-- Word -->
+            <div class="text-2xl font-bold text-white w-32 flex-shrink-0 capitalize">{{ w.word }}</div>
+
+            <!-- Miss count flames -->
+            <div class="flex items-center gap-1 flex-shrink-0">
+                {% for i in range([w.miss_count, 10] | min) %}
+                <span class="text-lg leading-none">🔥</span>
+                {% endfor %}
+                {% if w.miss_count > 10 %}
+                <span class="text-[var(--text-muted)] text-sm ml-1">×{{ w.miss_count }}</span>
+                {% endif %}
+            </div>
+
+            <!-- Progress toward graduation -->
+            <div class="flex-1 flex flex-col gap-1 min-w-0">
+                <div class="flex items-center justify-between text-sm text-[var(--text-muted)]">
+                    <span>Streak</span>
+                    <span>{{ w.consecutive_correct }}/{{ graduation_streak }}</span>
+                </div>
+                <div class="progress-track h-2">
+                    <div class="progress-fill"
+                         style="width: {{ (w.consecutive_correct / graduation_streak * 100) | int }}%"></div>
+                </div>
+            </div>
+
+            <!-- Graduation badge when close -->
+            {% if w.consecutive_correct >= graduation_streak - 1 %}
+            <div class="text-[var(--tile-green)] text-sm font-semibold flex-shrink-0">Almost there! ✨</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <!-- Empty state -->
+    <div class="flex flex-col items-center pt-16 text-center">
+        <img src="{{ url_for('static', filename='images/creature.svg') }}"
+             alt="Game mascot" class="w-32 h-32 mb-6 opacity-70">
+        <div class="text-2xl font-bold text-white mb-3">No challenge words yet!</div>
+        <p class="text-[var(--text-muted)] text-lg max-w-sm">
+            Keep playing and this list will fill up with words that need a little extra practice.
+        </p>
+        <a href="{{ url_for('pages.home') }}" class="mt-8 btn-glow bg-[var(--glow-blue)] text-white py-3 px-8 rounded-2xl text-xl font-bold">
+            Play Now
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+
+<script src="{{ url_for('static', filename='js/start-round.js') }}"></script>
+{% endblock %}

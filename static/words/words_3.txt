@@ -1,0 +1,17 @@
+bat
+box
+bug
+cat
+cup
+dog
+fox
+hat
+hen
+jet
+map
+net
+own
+pig
+red
+sea
+sun

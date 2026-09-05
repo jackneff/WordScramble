@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local data and secrets
+*.db
+.env
+
+# Editors and tooling
+.vscode/
+.idea/
+.claude/
+.pytest_cache/
+
+# Source art and word-list PDFs (not needed to run the app)
+assets/

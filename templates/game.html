@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Word Scramble - Play{% endblock %}
+
+{% block content %}
+<div x-data="game({{ round_id }})" x-init="init()" class="flex flex-col items-center pt-4">
+
+    <!-- Progress & score header -->
+    <div class="w-full flex items-center justify-between mb-6">
+        <div class="text-lg text-[var(--text-muted)]">
+            Word <span class="text-white font-bold" x-text="currentWordIndex + 1"></span>
+            of <span x-text="words.length"></span>
+        </div>
+        <div class="text-lg">
+            Score: <span class="text-[var(--text-accent)] font-bold text-2xl" x-text="totalScore"></span>
+        </div>
+    </div>
+
+    <div class="w-full mb-8">
+        <div class="progress-track">
+            <div class="progress-fill" :style="'width: ' + progressPct + '%'"></div>
+        </div>
+    </div>
+
+    <!-- Success overlay -->
+    <div x-show="showSuccess" x-transition x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+        <div class="sparkles-container" x-ref="sparkles"></div>
+        <div class="success-overlay text-center relative z-10">
+            <img src="{{ url_for('static', filename='images/creature.svg') }}"
+                 alt="" class="w-48 h-48 mx-auto mb-6 animate-bounce">
+            <div class="text-7xl md:text-8xl font-bold mb-4 success-text">GREAT JOB!</div>
+            <div class="text-5xl md:text-6xl text-[var(--text-accent)] font-bold">
+                +<span x-text="lastScore"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game card -->
+    <div class="game-card p-6 md:p-10 w-full" x-show="!roundComplete">
+
+        <!-- Answer blocks -->
+        <div class="flex justify-center gap-3 mb-10 flex-wrap" :class="{ 'shake': shaking }">
+            <template x-for="(block, i) in answerBlocks" :key="i">
+                <div class="answer-block"
+                     :class="{
+                         'first-letter': i === 0,
+                         'filled bounce-in': block.letter && i !== 0,
+                         'hint-letter': block.isHint,
+                         'drop-hover': dropTarget === i && i !== 0
+                     }"
+                     @click="removeFromBlock(i)"
+                     @dragover.prevent="if (canPlaceIn(i)) dropTarget = i"
+                     @dragleave="dropTarget = null"
+                     @drop.prevent="dropOnBlock(i)"
+                     x-text="block.letter || ''"
+                ></div>
+            </template>
+        </div>
+
+        <!-- Scrambled letter tiles -->
+        <div class="flex justify-center gap-3 mb-8 flex-wrap">
+            <template x-for="(tile, i) in tiles" :key="tile.id">
+                <div class="letter-tile"
+                     :class="[
+                         'tile-color-' + (i % 8),
+                         tile.used ? 'used' : '',
+                         selectedTile === i ? 'selected' : ''
+                     ]"
+                     draggable="true"
+                     @dragstart="dragStart(i, $event)"
+                     @dragend="dragEnd()"
+                     @click="clickTile(i)"
+                     x-text="tile.letter"
+                ></div>
+            </template>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex justify-center gap-4">
+            <button @click="getHint()"
+                    class="btn-glow bg-[var(--glow-purple)] text-white py-3 px-6 rounded-xl text-lg font-semibold">
+                Hint
+            </button>
+            <button @click="skipWord()"
+                    class="btn-glow bg-[var(--bg-secondary)] text-[var(--text-muted)] py-3 px-6 rounded-xl text-lg font-semibold border border-[var(--text-muted)]/30 hover:text-white">
+                Skip
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/game.js') }}"></script>
+{% endblock %}

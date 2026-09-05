@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Word Scramble{% endblock %}</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { fredoka: ['Fredoka', 'sans-serif'] },
+                    colors: {
+                        space: { dark: '#0f0e2e', mid: '#1a1850', card: '#232060' }
+                    }
+                }
+            }
+        };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/creature.svg') }}" type="image/svg+xml">
+
+    <script src="{{ url_for('static', filename='js/sfx.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/sparkles.js') }}"></script>
+    <script>
+        loadSounds({
+            pop: "{{ url_for('static', filename='sound/pop.wav') }}",
+            yay: "{{ url_for('static', filename='sound/yay.wav') }}",
+            gameStart: "{{ url_for('static', filename='sound/game-start.wav') }}",
+            gameWin: "{{ url_for('static', filename='sound/game-win.wav') }}"
+        });
+    </script>
+    {% block head %}{% endblock %}
+</head>
+<body class="font-fredoka min-h-screen relative">
+    <div class="relative z-10">
+        <nav class="flex items-center justify-between px-6 py-4">
+            <a href="{{ url_for('pages.home') }}"
+               class="text-2xl font-bold text-white hover:text-[var(--glow-blue)] transition-colors">
+                Word Scramble
+            </a>
+            <div class="flex gap-4">
+                <a href="{{ url_for('pages.home') }}" class="text-[var(--text-muted)] hover:text-white transition-colors">Home</a>
+                <a href="{{ url_for('pages.history') }}" class="text-[var(--text-muted)] hover:text-white transition-colors">My Scores</a>
+                <a href="{{ url_for('pages.challenge') }}" class="text-[var(--text-muted)] hover:text-white transition-colors">Challenge Words</a>
+            </div>
+        </nav>
+
+        <main class="max-w-3xl mx-auto px-4 pb-12">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</body>
+</html>

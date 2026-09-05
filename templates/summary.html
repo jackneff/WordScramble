@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Word Scramble - Round Complete!{% endblock %}
+
+{% block content %}
+<div id="page-sparkles" class="sparkles-container"></div>
+
+<div x-data x-init="playSfx('gameWin'); setTimeout(() => spawnSparkles(document.getElementById('page-sparkles'), { originY: 0.33, spread: 0.6, clearAfter: 2000 }), 350)" class="flex flex-col items-center pt-8">
+    <img src="{{ url_for('static', filename='images/creature.svg') }}"
+         alt="Game mascot" class="w-28 h-28 mb-4 animate-drop-in">
+    <h1 class="text-5xl font-bold text-white mb-2 animate-drop-in-delayed">Round Complete!</h1>
+
+    <!-- Star Rating -->
+    <div class="text-5xl my-6 animate-drop-in-3">
+        {% for i in range(3) %}
+            {% if i < stars %}
+                <span class="star filled">&#9733;</span>
+            {% else %}
+                <span class="star">&#9733;</span>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- Total Score -->
+    <div class="game-card p-8 w-full max-w-md text-center mb-8 animate-drop-in-4">
+        <p class="text-[var(--text-muted)] text-lg mb-2">Total Score</p>
+        <p class="text-6xl font-bold text-[var(--text-accent)]">{{ rnd.total_score }}</p>
+        <p class="text-[var(--text-muted)] mt-2">{{ rnd.hints_used }} hint{{ 's' if rnd.hints_used != 1 else '' }} used</p>
+    </div>
+
+    <!-- Per-Word Breakdown -->
+    <div class="game-card p-6 w-full max-w-md mb-8 animate-drop-in-4">
+        <h2 class="text-xl font-semibold text-[var(--glow-blue)] mb-4">Word Breakdown</h2>
+        <div class="space-y-3">
+            {% for w in words %}
+            <div class="flex items-center justify-between py-2 border-b border-white/10 last:border-0">
+                <div class="flex items-center gap-3">
+                    <span class="text-lg font-bold text-white uppercase">{{ w.word }}</span>
+                    {% if w.hints_used > 0 %}
+                        <span class="text-xs bg-[var(--glow-purple)]/20 text-[var(--glow-purple)] px-2 py-0.5 rounded-full">
+                            {{ w.hints_used }} hint{{ 's' if w.hints_used != 1 else '' }}
+                        </span>
+                    {% endif %}
+                </div>
+                <span class="text-lg font-bold {% if w.score > 0 %}text-[var(--text-accent)]{% else %}text-[var(--text-muted)]{% endif %}">
+                    +{{ w.score }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex gap-4 animate-drop-in-4">
+        <a href="{{ url_for('pages.home') }}" class="btn-glow bg-[var(--glow-blue)] text-white py-3 px-8 rounded-xl text-xl font-bold">
+            Play Again
+        </a>
+        <a href="{{ url_for('pages.history') }}" class="btn-glow bg-[var(--bg-card)] text-[var(--text-muted)] py-3 px-8 rounded-xl text-xl font-bold border border-white/20 hover:text-white">
+            All Scores
+        </a>
+    </div>
+</div>
+
+{% endblock %}

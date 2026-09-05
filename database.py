@@ -196,8 +196,8 @@ def finish_round(round_id):
         )
 
 
-def get_history(limit=20):
-    """Completed rounds, newest first, with the true best-possible score.
+def get_history(limit=20, offset=0):
+    """One page of completed rounds, newest first.
 
     `total_letters` is derived from the actual word lengths in each round, so
     history and the round summary always agree on the star rating.
@@ -211,9 +211,35 @@ def get_history(limit=20):
                LEFT JOIN round_words rw ON rw.round_id = r.id
                WHERE r.finished_at IS NOT NULL
                GROUP BY r.id
-               ORDER BY r.started_at DESC
-               LIMIT ?""",
-            (limit,),
+               ORDER BY r.started_at DESC, r.id DESC
+               LIMIT ? OFFSET ?""",
+            (limit, offset),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def count_finished_rounds():
+    with connection() as conn:
+        return conn.execute(
+            "SELECT COUNT(*) FROM rounds WHERE finished_at IS NOT NULL"
+        ).fetchone()[0]
+
+
+def get_round_scores():
+    """Score and letter count for every finished round, for lifetime stats.
+
+    Two small columns per round, so this stays cheap; computing the star
+    average in Python keeps the thresholds in scoring.py rather than
+    duplicating them in SQL.
+    """
+    with connection() as conn:
+        rows = conn.execute(
+            """SELECT r.id, r.total_score,
+                      COALESCE(SUM(rw.word_length), 0) AS total_letters
+               FROM rounds r
+               LEFT JOIN round_words rw ON rw.round_id = r.id
+               WHERE r.finished_at IS NOT NULL
+               GROUP BY r.id""",
         ).fetchall()
     return [dict(r) for r in rows]
 

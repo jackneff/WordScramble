@@ -1,11 +1,10 @@
 """Rendered pages."""
 from collections import Counter
 
-from flask import Blueprint, redirect, render_template, url_for
+from flask import Blueprint, redirect, render_template, request, url_for
 
 import database as db
 import game
-import scoring
 
 bp = Blueprint("pages", __name__)
 
@@ -59,11 +58,13 @@ def challenge():
 
 @bp.route("/history")
 def history():
-    rounds = db.get_history()
-    for r in rounds:
-        max_possible = r["total_letters"] * scoring.POINTS_PER_LETTER
-        pct = scoring.score_pct(r["total_score"], max_possible)
-        r["stars"] = scoring.star_rating(pct)
-        r["pct"] = round(pct)
-    best_id = max(rounds, key=lambda r: r["total_score"])["id"] if rounds else None
-    return render_template("history.html", rounds=rounds, best_id=best_id)
+    try:
+        page = int(request.args.get("page", 1))
+    except (TypeError, ValueError):
+        page = 1
+
+    return render_template(
+        "history.html",
+        stats=game.lifetime_stats(),
+        **game.history_page(page),
+    )

@@ -127,6 +127,57 @@ def reveal_hint(round_word_id, filled_positions):
     return {"position": -1, "letter": ""}
 
 
+ROUNDS_PER_PAGE = 20
+
+
+def _stars_for(total_score, total_letters):
+    max_possible = total_letters * scoring.POINTS_PER_LETTER
+    return scoring.star_rating(scoring.score_pct(total_score, max_possible))
+
+
+def lifetime_stats():
+    """Totals across every finished round, independent of the page shown.
+
+    The best round is found across the whole history rather than the current
+    page, so the badge stays correct once older rounds scroll off.
+    """
+    rows = db.get_round_scores()
+    if not rows:
+        return {"rounds_played": 0, "best_score": 0, "best_id": None, "avg_stars": 0}
+
+    best = max(rows, key=lambda r: r["total_score"])
+    stars = [_stars_for(r["total_score"], r["total_letters"]) for r in rows]
+    return {
+        "rounds_played": len(rows),
+        "best_score": best["total_score"],
+        "best_id": best["id"],
+        "avg_stars": round(sum(stars) / len(stars), 1),
+    }
+
+
+def history_page(page=1, per_page=ROUNDS_PER_PAGE):
+    """One page of history, with star ratings and pagination metadata."""
+    total = db.count_finished_rounds()
+    total_pages = max(1, -(-total // per_page))  # ceiling division
+    page = max(1, min(page, total_pages))
+
+    rounds = db.get_history(limit=per_page, offset=(page - 1) * per_page)
+    for r in rounds:
+        max_possible = r["total_letters"] * scoring.POINTS_PER_LETTER
+        pct = scoring.score_pct(r["total_score"], max_possible)
+        r["stars"] = scoring.star_rating(pct)
+        r["pct"] = round(pct)
+
+    return {
+        "rounds": rounds,
+        "page": page,
+        "total_pages": total_pages,
+        "total_rounds": total,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+    }
+
+
 def summarise_round(round_id):
     """Score summary for a finished round, or None if the round is unknown."""
     rnd = db.get_round(round_id)

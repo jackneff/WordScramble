@@ -28,7 +28,17 @@ function game(roundId) {
 
         get progressPct() {
             if (!this.words.length) return 0;
+            if (this.roundComplete) return 100;
             return (this.currentWordIndex / this.words.length) * 100;
+        },
+
+        /**
+         * The "Word N of M" counter. Clamped so a finished round can never
+         * read "Word 6 of 5" while the browser is navigating to the summary.
+         */
+        get displayWordNumber() {
+            if (!this.words.length) return 0;
+            return Math.min(this.currentWordIndex + 1, this.words.length);
         },
 
         get currentWord() {
@@ -250,11 +260,14 @@ function game(roundId) {
         // --- navigation ------------------------------------------------------
 
         nextWord() {
-            this.currentWordIndex++;
-            if (this.currentWordIndex >= this.words.length) {
+            // Check before incrementing: stepping the index past the last word
+            // would render "Word 6 of 5" for as long as the summary takes to load.
+            if (this.currentWordIndex + 1 >= this.words.length) {
+                this.roundComplete = true;
                 this.goToSummary();
                 return;
             }
+            this.currentWordIndex++;
             this.loadWord();
         },
 

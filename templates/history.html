@@ -8,47 +8,92 @@
     {% if not rounds %}
     <div class="game-card p-12 text-center w-full max-w-md">
         <p class="text-xl text-[var(--text-muted)] mb-6">No games played yet!</p>
-        <a href="{{ url_for('pages.home') }}" class="btn-glow bg-[var(--glow-blue)] text-white py-3 px-8 rounded-xl text-xl font-bold inline-block">
+        <a href="{{ url_for('pages.home') }}"
+           class="btn-glow bg-[var(--glow-blue)] text-white py-3 px-8 rounded-xl text-xl font-bold inline-block">
             Play Now
         </a>
     </div>
     {% else %}
 
+    <!-- Lifetime summary -->
+    <div class="game-card p-6 w-full max-w-lg mb-8">
+        <div class="grid grid-cols-3 gap-4 text-center">
+            <div>
+                <div class="text-3xl font-bold text-white">{{ stats.rounds_played }}</div>
+                <div class="text-sm text-[var(--text-muted)] mt-1">
+                    {{ 'game' if stats.rounds_played == 1 else 'games' }} played
+                </div>
+            </div>
+            <div class="border-x border-white/10">
+                <div class="text-3xl font-bold text-[var(--text-accent)]">{{ stats.best_score }}</div>
+                <div class="text-sm text-[var(--text-muted)] mt-1">best score</div>
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-white">
+                    {{ stats.avg_stars }}<span class="star filled text-2xl ml-1">&#9733;</span>
+                </div>
+                <div class="text-sm text-[var(--text-muted)] mt-1">average</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Round list -->
     <div class="w-full max-w-lg space-y-4">
         {% for r in rounds %}
-        <div class="game-card p-5 flex items-center gap-4 {% if r.id == best_id %}ring-2 ring-[var(--text-accent)]{% endif %}">
-            <!-- Stars -->
+        <div class="game-card p-5 flex items-center gap-4
+                    {% if r.id == stats.best_id %}ring-2 ring-[var(--text-accent)]{% endif %}">
             <div class="text-2xl shrink-0">
                 {% for i in range(3) %}
-                    {% if i < r.stars %}
-                        <span class="star filled">&#9733;</span>
-                    {% else %}
-                        <span class="star">&#9733;</span>
-                    {% endif %}
+                    <span class="star{% if i < r.stars %} filled{% endif %}">&#9733;</span>
                 {% endfor %}
             </div>
 
-            <!-- Details -->
             <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1">
                     <span class="text-white font-bold text-lg">{{ r.total_score }} pts</span>
-                    {% if r.id == best_id %}
+                    {% if r.id == stats.best_id %}
                         <span class="text-sm text-[var(--text-accent)]">Best!</span>
                     {% endif %}
                 </div>
-                <!-- Score Bar -->
+
                 <div class="w-full bg-white/10 rounded-full h-3 mb-1 overflow-hidden">
                     <div class="score-bar" style="width: {{ [r.pct, 100] | min }}%;"></div>
                 </div>
+
                 <div class="flex justify-between text-xs text-[var(--text-muted)]">
                     <span>{{ r.round_size }} words</span>
-                    <span>{{ r.hints_used }} hints</span>
+                    <span>{{ r.hints_used }} hint{{ '' if r.hints_used == 1 else 's' }}</span>
                     <span>{{ r.started_at[:10] if r.started_at else '' }}</span>
                 </div>
             </div>
         </div>
         {% endfor %}
     </div>
+
+    <!-- Pagination -->
+    {% if total_pages > 1 %}
+    <nav class="flex items-center gap-4 mt-8" aria-label="Score history pages">
+        {% if has_prev %}
+        <a href="{{ url_for('pages.history', page=page - 1) }}"
+           class="btn-glow bg-[var(--bg-card)] text-white py-2 px-5 rounded-xl font-semibold border border-white/20">
+            &larr; Newer
+        </a>
+        {% else %}
+        <span class="py-2 px-5 text-[var(--text-muted)]/40">&larr; Newer</span>
+        {% endif %}
+
+        <span class="text-[var(--text-muted)]">Page {{ page }} of {{ total_pages }}</span>
+
+        {% if has_next %}
+        <a href="{{ url_for('pages.history', page=page + 1) }}"
+           class="btn-glow bg-[var(--bg-card)] text-white py-2 px-5 rounded-xl font-semibold border border-white/20">
+            Older &rarr;
+        </a>
+        {% else %}
+        <span class="py-2 px-5 text-[var(--text-muted)]/40">Older &rarr;</span>
+        {% endif %}
+    </nav>
+    {% endif %}
 
     {% endif %}
 

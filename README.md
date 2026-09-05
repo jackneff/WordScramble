@@ -146,6 +146,7 @@ including the PIN gate. Each test runs against its own throwaway SQLite file.
   change words, scoring or the schema
 - **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** — gunicorn, systemd, nginx, HTTPS and
   backups on a DigitalOcean droplet
+- **[CLAUDE.md](CLAUDE.md)** — conventions this codebase holds itself to
 
 ## Credits
 

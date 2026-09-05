@@ -49,10 +49,28 @@
                 <a href="{{ url_for('pages.home') }}" class="text-[var(--text-muted)] hover:text-white transition-colors">Home</a>
                 <a href="{{ url_for('pages.history') }}" class="text-[var(--text-muted)] hover:text-white transition-colors">My Scores</a>
                 <a href="{{ url_for('pages.challenge') }}" class="text-[var(--text-muted)] hover:text-white transition-colors">Challenge Words</a>
+                <a href="{{ url_for('lists.manage') }}" class="text-[var(--text-muted)] hover:text-white transition-colors">Word Lists</a>
             </div>
         </nav>
 
         <main class="max-w-3xl mx-auto px-4 pb-12">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="mb-6 space-y-2">
+                    {% for category, message in messages %}
+                    <div role="status" class="rounded-xl px-5 py-3 border
+                        {% if category == 'error' %}
+                            bg-[var(--tile-orange)]/15 border-[var(--tile-orange)]/50 text-[var(--tile-orange)]
+                        {% else %}
+                            bg-[var(--tile-green)]/15 border-[var(--tile-green)]/50 text-[var(--tile-green)]
+                        {% endif %}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endwith %}
+
             {% block content %}{% endblock %}
         </main>
     </div>

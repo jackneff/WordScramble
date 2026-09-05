@@ -18,9 +18,11 @@ drawing; I vectorised it.
 <td><img src="docs/screenshots/04-summary.png" alt="Round complete summary"></td>
 <td><img src="docs/screenshots/05-challenge-words.png" alt="Challenge words tracking"></td>
 </tr>
+<tr>
+<td><img src="docs/screenshots/07-word-lists.png" alt="Adding this week's spelling words"></td>
+<td><img src="docs/screenshots/06-my-scores.png" alt="Score history"></td>
+</tr>
 </table>
-
-<p align="center"><img src="docs/screenshots/06-my-scores.png" width="70%" alt="Score history"></p>
 
 **Python 3.10+ · Flask · SQLite · Alpine.js · Tailwind CSS · pytest**
 
@@ -34,10 +36,14 @@ Then open <http://localhost:5000>. No build step, no bundler, no Node.
 
 ## This week's spelling words
 
-Drop a `.txt` file into `static/words/lists/` — one word per line — and it
-appears in the picker on the home screen. No restart, no code change, no
-naming convention: `week-12.txt` becomes "Week 12". A parent can put the
-actual list from school into the game in about thirty seconds.
+Open **Word Lists**, paste the words in or upload the file from school, and
+they appear in the home-screen picker straight away. No restart, no shell
+access, no naming convention. Words can be one per line or separated by
+commas, because a list copied out of an email rarely arrives tidy.
+
+You can also drop a `.txt` file straight into `static/words/lists/` if you
+have shell access — the directory is read on every request, so both routes
+work the same way.
 
 A list is played on its own terms. Ask for a 15-word round from a 10-word
 list and you get a 10-word round, because padding it with unrelated words
@@ -67,7 +73,7 @@ topping up with ordinary words when it's short.
 
 ## Features
 
-- **Custom word lists** — drop this week's spelling words in as a text file
+- **Custom word lists** — paste or upload this week's spelling words from the browser
 - Drag-and-drop **or** tap-to-place letter tiles; the first letter is given
 - Hints reveal the next correct letter for 15 points
 - 1–3 star ratings based on the round's share of a perfect score
@@ -81,7 +87,7 @@ topping up with ordinary words when it's short.
 ```
 app.py        create_app() factory; wsgi.py is the production entry point
 config.py     Config / TestConfig, every value from an environment variable
-routes/       pages.py (HTML) and api.py (JSON) blueprints
+routes/       pages.py (HTML), api.py (JSON), lists.py (list management)
 game.py       Game rules: start, check, hint, skip, summarise
 scoring.py    Points, hint cost, star thresholds
 words.py      Built-in word pool: loading, weighted selection, scrambling
@@ -129,10 +135,10 @@ operational overhead with nothing to show for it at this scale.
 ./scripts/test.sh          # Windows: .\scripts\test.ps1
 ```
 
-82 tests covering the scoring rules, word selection, the hint and skip flows,
-challenge-word graduation, custom word lists (including path-traversal
-attempts), history paging, and the HTTP layer including the PIN gate. Each test
-runs against its own throwaway SQLite file.
+104 tests covering the scoring rules, word selection, the hint and skip flows,
+challenge-word graduation, custom word lists and their upload path (including
+traversal attempts and oversized bodies), history paging, and the HTTP layer
+including the PIN gate. Each test runs against its own throwaway SQLite file.
 
 ## Documentation
 

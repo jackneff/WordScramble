@@ -29,9 +29,16 @@ The database goes **outside** the application directory, so pulling a new
 version can never overwrite the scores:
 
 ```bash
-sudo mkdir -p /var/lib/wordscramble
-sudo chown "$USER" /var/lib/wordscramble
+sudo mkdir -p /var/lib/wordscramble/lists
+sudo chown -R "$USER" /var/lib/wordscramble
 ```
+
+Word lists uploaded through `/lists` are written to `LISTS_DIR`, so put that
+outside the app directory too - otherwise a `git pull` can clobber the lists a
+parent added. The service user needs write access to it; nothing else does.
+
+Set `SESSION_COOKIE_SECURE=1` once HTTPS is in place (step 7) so the session
+cookie is never sent over plain HTTP.
 
 Create `.env`:
 
@@ -39,8 +46,10 @@ Create `.env`:
 cat > /srv/wordscramble/.env <<EOF
 SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
 DB_PATH=/var/lib/wordscramble/wordscramble.db
+LISTS_DIR=/var/lib/wordscramble/lists
 ACCESS_PIN=1234
 FLASK_DEBUG=0
+SESSION_COOKIE_SECURE=1
 EOF
 
 chmod 600 /srv/wordscramble/.env
@@ -52,8 +61,9 @@ Three settings matter:
   console exposed to anyone who triggers an error — remote code execution on a
   public host. This is the single most important line in this file.
 - **`ACCESS_PIN`** gates the whole app behind a shared PIN. The app has no user
-  accounts by design; without a PIN, anyone who finds the URL can play and read
-  the score history. Pick something a child can type but isn't `0000`.
+  accounts by design; without a PIN, anyone who finds the URL can play, read
+  the score history, and add or delete word lists through `/lists`. Pick
+  something a child can type but isn't `0000`.
 - **`SECRET_KEY`** signs the session cookie that remembers an unlocked browser.
   With a guessable key, the PIN can be bypassed by forging a cookie.
 
@@ -225,3 +235,5 @@ curl -I http://127.0.0.1:8000/             # bypass nginx
 | Login loop | `SECRET_KEY` changing between restarts — make sure it's in `.env`, not generated at boot |
 | Styles missing | The CDN is unreachable, or the `/static/` alias path is wrong |
 | Changes not showing | Forgot `systemctl restart` — there's no auto-reload in production |
+| Uploading a list fails | `LISTS_DIR` missing or not writable by the service user |
+| Upload says "too big" | Body over 256 KB (`MAX_CONTENT_LENGTH`); a word list should be a few KB |

@@ -38,7 +38,7 @@ the workflow changes.
 ```
 app.py        create_app() factory; wsgi.py is the production entry point
 config.py     Config/TestConfig, all values from environment variables
-routes/       pages.py (HTML) and api.py (JSON) blueprints — validation only
+routes/       pages.py (HTML), api.py (JSON), lists.py (list management)
 game.py       Game rules: start/check/hint/skip/summarise
 scoring.py    Points, hint cost, star thresholds
 words.py      Built-in word pool: loading, weighted selection, scrambling
@@ -63,8 +63,9 @@ rules; `game.py` never touches `request` or `render_template`.
 - Word files: `static/words/words_<length>.txt`, one word per line
 - Custom lists: any `static/words/lists/<slug>.txt`; read fresh on every request
   so a parent can add one without a restart - do not add caching there
-- Never build a path from a user-supplied list slug; match it against
-  `available_lists()` instead
+- Never build a path from a user-supplied list slug or an uploaded filename;
+  slugify the parent's chosen name and match against `available_lists()`
+- Uploaded list text is parsed into words only - never executed or rendered raw
 - Sound via `playSfx(name)`; register files with `loadSounds()` in `base.html`
 - Config comes from environment variables via `config.py` — never hardcode
   paths, secrets, or debug flags

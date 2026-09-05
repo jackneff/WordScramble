@@ -113,21 +113,36 @@ spinning up HTTP.
 
 ### Add a vocabulary list (the parent-facing way)
 
-Drop a `.txt` file in `static/words/lists/`, one word per line. It shows up in
-the home-screen picker immediately - the directory is read on every request, not
-cached, precisely so a parent can add this week's list without a restart.
+Two routes, both landing in `static/words/lists/`:
+
+- **From the browser** - the Word Lists page (`/lists`) takes a pasted list or
+  an uploaded text file. This is the one a parent uses; it needs no shell access.
+- **From the filesystem** - drop a `.txt` file in the directory yourself.
+
+Either way the directory is read on every request, not cached, precisely so a
+new list needs no restart.
 
 - The filename becomes the display name: `week-12.txt` -> "Week 12"
 - Filenames must match `[a-z0-9][a-z0-9_-]*.txt`; anything else is skipped
 - Only plain 3-12 letter words are kept, so `#` comment lines and stray
   punctuation are ignored rather than breaking the list
 - Duplicates are removed; lists are capped at `MAX_WORDS_PER_LIST` (500)
+- Words may be one per line or separated by commas, semicolons or spaces
 - A list shorter than the requested round size makes a shorter round; it is
   never padded with unrelated words
 
-`wordlists.get_list_words()` matches the slug against the enumerated directory
-rather than joining it onto a path, so a crafted slug cannot escape the lists
-directory. `tests/test_wordlists.py` covers that.
+Three rules keep the upload path safe, and each has a test:
+
+- The saved filename comes from `slugify()` on the parent's list name, never
+  from the uploaded filename, so nothing the browser sends picks the path.
+- `get_list_words()` and `delete_list()` match a slug against the enumerated
+  directory rather than joining it onto a path.
+- `MAX_CONTENT_LENGTH` (256 KB) caps the body; Flask raises 413 before we read
+  it, and the handler in `app.py` turns that into a readable message.
+
+Uploaded text is only ever parsed into words - never executed, and never
+rendered raw - so the narrow `^[a-z]{3,12}$` filter is doing most of the work.
+`tests/test_wordlists.py` and `tests/test_list_manager.py` cover all of it.
 
 ### Add or change words in the built-in pool
 

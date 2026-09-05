@@ -95,12 +95,27 @@ def test_unusable_entries_are_skipped(lists_dir):
         "planet",
         "it",                    # too short to scramble
         "supercalifragilistic",  # too long for the tile row
-        "two words",
-        "hy-phen",
+        "hy-phen",               # not a plain word
+        "42",
         "rocket",
     ])
 
     assert wordlists.get_list_words("mixed") == ["planet", "rocket"]
+
+
+def test_words_may_be_separated_by_commas_or_spaces(lists_dir):
+    """A list copied out of an email is rarely one word per line."""
+    write_list(lists_dir, "pasted.txt", ["planet, rocket; comet", "orbit galaxy"])
+
+    assert wordlists.get_list_words("pasted") == [
+        "planet", "rocket", "comet", "orbit", "galaxy",
+    ]
+
+
+def test_comment_lines_are_ignored_even_with_several_words(lists_dir):
+    write_list(lists_dir, "commented.txt", ["# week twelve spelling", "planet rocket"])
+
+    assert wordlists.get_list_words("commented") == ["planet", "rocket"]
 
 
 def test_a_list_is_capped(lists_dir):

@@ -42,6 +42,16 @@ class Config:
     ROUND_SIZES = (5, 10, 15)
     DEFAULT_ROUND_SIZE = 10
 
+    # A word list is a small text file; anything larger is a mistake or an
+    # attack. Flask turns an oversized body into a 413 before we read it.
+    MAX_CONTENT_LENGTH = 256 * 1024
+
+    # Session cookie hardening. SameSite=Lax means a form on another site
+    # cannot silently POST to /lists using this session.
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SECURE = _bool("SESSION_COOKIE_SECURE", False)
+
 
 class TestConfig(Config):
     TESTING = True

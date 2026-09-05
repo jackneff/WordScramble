@@ -1,140 +1,120 @@
 # Word Scramble
 
-A word-scramble spelling game for early readers. Players drag scrambled letter
-tiles into place to spell a word, earn stars for a round, and the app quietly
-tracks which words they keep getting wrong so it can serve those back later.
+A word-scramble spelling game for early readers. Drag the scrambled letter tiles
+into place to spell the word, earn stars for the round — and the app quietly
+tracks which words keep causing trouble so it can serve them back later.
 
 Built for my daughter to practise her weekly spelling list. The mascot is her
-drawing — I vectorised it, she designed it.
+drawing; I vectorised it.
 
-![Gameplay](docs/gameplay.png)
+![Gameplay](screenshots/gameplay.png)
 
-## Why it exists
+**Python 3.10+ · Flask · SQLite · Alpine.js · Tailwind CSS · pytest**
 
-Spelling apps aimed at kids are mostly drill-and-repeat: the same words in the
-same order regardless of what the child actually finds hard. The interesting
-part of this project is the **challenge-word tracker**. Every solve is scored
-not just right/wrong but on hesitation — an answer that takes more than roughly
-four seconds per letter is treated as a partial miss, on the theory that a long
-pause means the speller was guessing. Words accumulate misses, surface on a
-"Challenge Words" page, and only graduate off it after three clean solves.
+```bash
+./scripts/setup.sh && ./scripts/run.sh     # Windows: .\scripts\setup.ps1
+```
 
-The app also spots shared suffixes across the practice list (`-ing`, `-tion`)
-and points them out, since words a child struggles with tend to cluster around
-a pattern rather than being independently hard.
+Then open <http://localhost:5000>. No build step, no bundler, no Node.
+
+---
+
+## The interesting part
+
+Most spelling apps for kids are drill-and-repeat: the same words in the same
+order, regardless of what the child actually finds hard. This one adapts.
+
+**It measures hesitation, not just correctness.** A solve that takes longer than
+roughly two seconds per letter counts as a partial miss, and more than four
+seconds per letter counts double — a long pause usually means guessing, even
+when the final answer is right. Wrong attempts and skips weigh in too. Words
+accumulate misses, surface on a **Challenge Words** page, and only graduate off
+it after three clean solves.
+
+**It looks for patterns.** When several practice words share an ending (`-ing`,
+`-tion`, `-ould`), the app points that out — words a child struggles with tend
+to cluster around a spelling rule rather than being independently hard, and
+that's the more useful thing to practise.
+
+A Challenge Round then builds a game entirely from the current practice list,
+topping up with ordinary words when it's short.
 
 ## Features
 
-- **Drag-and-drop or tap-to-place** letter tiles; the first letter is given
-- **Hints** reveal the next correct letter for 15 points
-- **Star ratings** — 1–3 stars based on the round's percentage of a perfect score
-- **Challenge Words** — automatic tracking of words that need more practice,
-  with a dedicated round mode built from them
-- **History** of every completed round
-- **Resumable rounds** — reloading mid-round picks up where you left off
-- **Optional PIN gate** for deployment on a public host
-
-## Tech stack
-
-Python 3.10+ · Flask · SQLite · Jinja2 · Alpine.js · Tailwind CSS
-
-No build step and no bundler. Alpine and Tailwind come from a CDN, so the app
-is `git clone` and run.
-
-## Running locally
-
-```bash
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-python app.py
-```
-
-Open <http://localhost:5000>. The SQLite database is created on first run.
-
-## Tests
-
-```bash
-pip install -r requirements-dev.txt
-pytest
-```
-
-47 tests covering the scoring rules, word selection, the hint and skip flows,
-challenge-word graduation, and the HTTP layer including the PIN gate.
+- Drag-and-drop **or** tap-to-place letter tiles; the first letter is given
+- Hints reveal the next correct letter for 15 points
+- 1–3 star ratings based on the round's share of a perfect score
+- Automatic challenge-word tracking with a dedicated round mode
+- History of every completed round
+- Rounds resume where you left off if the page is reloaded
+- Optional PIN gate for hosting somewhere public
 
 ## Architecture
 
 ```
-app.py            Application factory
-wsgi.py           Production entry point (gunicorn)
-config.py         Environment-driven configuration
-routes/
-  pages.py        Rendered pages
-  api.py          JSON API — request validation only
-game.py           Game rules: rounds, answers, hints, skips
-scoring.py        Points and star thresholds
-words.py          Word list loading, selection, scrambling
-database.py       SQLite access; every query lives here
-templates/        Jinja2 templates
-static/
-  js/             game.js, sfx.js, sparkles.js, start-round.js
-  css/theme.css   Space theme; all colours are CSS variables
-  words/          words_3.txt … words_8.txt, one word per line
-  sound/          Sound effects
-tests/            pytest suite
+app.py        create_app() factory; wsgi.py is the production entry point
+config.py     Config / TestConfig, every value from an environment variable
+routes/       pages.py (HTML) and api.py (JSON) blueprints
+game.py       Game rules: start, check, hint, skip, summarise
+scoring.py    Points, hint cost, star thresholds
+words.py      Word list loading, weighted selection, scrambling
+database.py   All SQL, behind a connection() context manager
+auth.py       Optional shared-PIN gate
 ```
 
-Three rules shape the layout:
+Three decisions shape it:
 
-1. **The client never sees the answer.** `/api/round/<id>` returns the scrambled
-   letters, the length, and the first letter — never the word. Answers are
-   checked server-side and scores are computed server-side, so the score cannot
-   be forged from the browser console.
-2. **The rules live in one place.** Points, hint costs and star thresholds are
-   all in `scoring.py`. Before, the summary page and the history page computed
-   stars differently and disagreed about the same round.
-3. **Routes stay thin.** They validate input and hand off to `game.py`, which is
-   testable without an HTTP request.
+**The client never sees the answer.** `/api/round/<id>` returns the scrambled
+letters, the length and the first letter — never the word. Answers are checked
+and scored server-side, so a score can't be forged from the browser console. A
+test fails if a field ever leaks into that payload.
+
+**The rules live in exactly one place.** Points, hint costs and star thresholds
+are all in `scoring.py`. They used to be scattered, and the summary and history
+pages disagreed about the same round as a result; a regression test now asserts
+the two agree.
+
+**Routes stay thin.** They validate input and hand off to `game.py`, which has
+no idea HTTP exists — so the rules are tested directly, without a request.
 
 ### Scoring
 
 | | |
 |---|---|
 | Base score | word length × 10 |
-| Hint cost | −15 points each (never below 0) |
-| Skip | 0 points, and counts as 3 misses against the word |
-| Stars | ≥80% of the round's maximum = 3★, ≥50% = 2★, else 1★ |
+| Hint | −15 points each, never below 0 |
+| Skip | 0 points, counts as 3 misses against the word |
+| Stars | ≥80% of the round maximum = 3★, ≥50% = 2★, else 1★ |
 
-### Sound
+### Why SQLite
 
-Sound effects go through the Web Audio API rather than `<audio>` elements —
-replaying an `<audio>` element for a rapid effect like a letter placement has a
-noticeable lag, since each play seeks and restarts the element. Buffers are
-decoded once on load; an `<audio>` fallback covers the window before decoding
-finishes and browsers without Web Audio.
+Deliberate, not a default. The workload is one child at a time and a few hundred
+writes a week, which SQLite handles with enormous headroom. In exchange the
+whole database is a single file: backup is one command, there's no second
+service to run on boot, no connection pool to tune, and no ~200 MB of resident
+memory spent on a database server for a single-user game. Postgres would be
+operational overhead with nothing to show for it at this scale.
 
-## Deploying
-
-Behind gunicorn and a reverse proxy:
+## Tests
 
 ```bash
-cp .env.example .env       # set SECRET_KEY, DB_PATH, and ACCESS_PIN
-pip install -r requirements.txt
-gunicorn --bind 127.0.0.1:8000 --workers 2 wsgi:app
+./scripts/test.sh          # Windows: .\scripts\test.ps1
 ```
 
-Two things matter:
+47 tests covering the scoring rules, word selection, the hint and skip flows,
+challenge-word graduation, and the HTTP layer including the PIN gate. Each test
+runs against its own throwaway SQLite file.
 
-- **Never set `FLASK_DEBUG=1` on a public host.** The Werkzeug debugger is
-  remote code execution.
-- **Set `ACCESS_PIN`.** The app has no user accounts by design; without a PIN
-  anyone who finds the URL can play and see the history.
+## Documentation
 
-Point `DB_PATH` at a directory outside the app tree (for example
-`/var/lib/wordscramble/`) so a redeploy cannot wipe the scores.
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** — setup, running, testing, and how to
+  change words, scoring or the schema
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** — gunicorn, systemd, nginx, HTTPS and
+  backups on a DigitalOcean droplet
 
 ## Credits
 
 - Character design and original drawings — my daughter
-- Character vectorisation, code — me
+- Vectorisation and code — me
 - Word lists — [k5learning.com](https://www.k5learning.com)
 - Sound effects — [Pixabay](https://pixabay.com)

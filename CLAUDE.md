@@ -21,14 +21,17 @@ messages, or asset filenames). The art credit is deliberately anonymous:
 ## Running
 
 ```bash
-pip install -r requirements.txt
-python app.py                    # http://localhost:5000
-
-pip install -r requirements-dev.txt
-pytest
+./scripts/setup.sh    # Windows: .\scripts\setup.ps1
+./scripts/run.sh      # Windows: .\scripts\run.ps1    -> http://localhost:5000
+./scripts/test.sh     # Windows: .\scripts\test.ps1
 ```
 
-Production: `gunicorn --bind 127.0.0.1:8000 wsgi:app`.
+Scripts live in `scripts/`, paired `.sh` and `.ps1`. Keep both in step when
+changing one.
+
+Full guides: `DEVELOPMENT.md` (setup, testing, common changes) and
+`DEPLOYMENT.md` (droplet, gunicorn, systemd, nginx, backups). Update them when
+the workflow changes.
 
 ## Architecture
 
@@ -69,6 +72,12 @@ when changing the challenge-word logic, `tests/test_word_stats.py`.
 
 ## Deployment Notes
 
+See `DEPLOYMENT.md` for the full procedure. The essentials:
+
 - `FLASK_DEBUG` must stay off in production (Werkzeug debugger = RCE)
 - Set `SECRET_KEY` and `ACCESS_PIN` in `.env` (never committed)
 - Point `DB_PATH` outside the app directory so redeploys don't wipe scores
+- SQLite is a deliberate choice for this workload - see the README. Enable WAL
+  and run gunicorn with one worker and several threads
+- `docs/` is gitignored for local scratch notes; tracked documentation lives at
+  the repo root and the screenshot in `screenshots/`

@@ -1,0 +1,16 @@
+# Normalise line endings so the repo is identical on Windows and Linux.
+* text=auto eol=lf
+
+# Shell scripts must keep LF endings or the shebang breaks on Linux
+# ("bad interpreter: /usr/bin/env bash^M").
+*.sh text eol=lf
+
+# PowerShell is happiest with CRLF on Windows.
+*.ps1 text eol=crlf
+
+# Binary assets: never touch.
+*.png binary
+*.wav binary
+*.mp3 binary
+*.pdf binary
+*.db binary

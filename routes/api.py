@@ -38,7 +38,11 @@ def start():
     if mode not in (game.NORMAL, game.CHALLENGE):
         mode = game.NORMAL
 
-    round_id, words = game.start_round(round_size, mode)
+    word_list = data.get("word_list") or None
+
+    round_id, words = game.start_round(round_size, mode, word_list)
+    if round_id is None:
+        return jsonify({"error": "That word list is no longer available"}), 404
     return jsonify({"round_id": round_id, "words": words})
 
 

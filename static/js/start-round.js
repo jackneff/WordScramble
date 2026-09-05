@@ -7,7 +7,7 @@ function roundStarter() {
         loading: false,
         error: '',
 
-        async start(size, mode = 'normal') {
+        async start(size, mode = 'normal', wordList = '') {
             if (this.loading) return;
             this.loading = true;
             this.error = '';
@@ -16,7 +16,11 @@ function roundStarter() {
                 const res = await fetch('/api/start', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ round_size: size, mode }),
+                    body: JSON.stringify({
+                        round_size: size,
+                        mode,
+                        word_list: wordList || null,
+                    }),
                 });
                 if (!res.ok) throw new Error('Could not start the round');
 

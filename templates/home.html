@@ -11,12 +11,28 @@
     <p class="text-xl text-[var(--text-muted)] mb-12">Unscramble the letters to find the word!</p>
 
     <div class="game-card p-8 md:p-12 w-full max-w-md text-center">
+
+        {% if word_lists %}
+        <label for="word-list" class="block text-lg text-[var(--glow-blue)] mb-3 font-semibold">
+            Which words?
+        </label>
+        <select id="word-list" x-model="wordList"
+                class="w-full mb-8 bg-[var(--bg-secondary)] text-white text-lg rounded-xl
+                       py-3 px-4 border border-white/20 focus:outline-none
+                       focus:border-[var(--glow-blue)] cursor-pointer">
+            <option value="">All Words</option>
+            {% for list in word_lists %}
+            <option value="{{ list.slug }}">{{ list.name }} ({{ list.count }})</option>
+            {% endfor %}
+        </select>
+        {% endif %}
+
         <p class="text-lg text-[var(--glow-blue)] mb-6 font-semibold">How many words?</p>
 
         <div class="flex flex-col gap-4">
             <template x-for="size in sizes" :key="size">
                 <button
-                    @click="start(size)"
+                    @click="start(size, 'normal', wordList)"
                     :disabled="loading"
                     class="btn-glow py-4 px-8 rounded-2xl text-2xl font-bold text-white transition-all disabled:opacity-50"
                     :class="{
@@ -28,6 +44,9 @@
                 ></button>
             </template>
         </div>
+
+        <p x-show="shortList" x-cloak class="text-[var(--text-muted)] text-sm mt-5"
+           x-text="shortListNote"></p>
 
         <p x-show="error" x-cloak class="text-[var(--tile-orange)] mt-6" x-text="error"></p>
     </div>
@@ -43,6 +62,19 @@
         return {
             ...roundStarter(),
             sizes: {{ config.ROUND_SIZES | list | tojson }},
+            wordList: '',
+            listCounts: {{ list_counts | tojson }},
+
+            /** A chosen list may hold fewer words than the largest round. */
+            get shortList() {
+                if (!this.wordList) return false;
+                return this.listCounts[this.wordList] < Math.max(...this.sizes);
+            },
+
+            get shortListNote() {
+                const n = this.listCounts[this.wordList];
+                return `This list has ${n} word${n === 1 ? '' : 's'}, so the round will be ${n} long.`;
+            },
         };
     }
 </script>

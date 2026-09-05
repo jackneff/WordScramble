@@ -29,8 +29,8 @@ messages, or asset filenames). The art credit is deliberately anonymous:
 Scripts live in `scripts/`, paired `.sh` and `.ps1`. Keep both in step when
 changing one.
 
-Full guides: `DEVELOPMENT.md` (setup, testing, common changes) and
-`DEPLOYMENT.md` (droplet, gunicorn, systemd, nginx, backups). Update them when
+Full guides: `docs/DEVELOPMENT.md` (setup, testing, common changes) and
+`docs/DEPLOYMENT.md` (droplet, gunicorn, systemd, nginx, backups). Update them when
 the workflow changes.
 
 ## Architecture
@@ -41,7 +41,8 @@ config.py     Config/TestConfig, all values from environment variables
 routes/       pages.py (HTML) and api.py (JSON) blueprints — validation only
 game.py       Game rules: start/check/hint/skip/summarise
 scoring.py    Points, hint cost, star thresholds
-words.py      Word list loading, weighted selection, scrambling
+words.py      Built-in word pool: loading, weighted selection, scrambling
+wordlists.py  Parent-supplied vocabulary lists (static/words/lists/*.txt)
 database.py   All SQL; connection() context manager commits/rolls back/closes
 auth.py       Optional shared-PIN gate, enabled by setting ACCESS_PIN
 ```
@@ -60,6 +61,10 @@ rules; `game.py` never touches `request` or `render_template`.
 - JS lives in `static/js/`, not inline in templates
 - CSS variables in `theme.css` for all colors — `var(--name)`, not literals
 - Word files: `static/words/words_<length>.txt`, one word per line
+- Custom lists: any `static/words/lists/<slug>.txt`; read fresh on every request
+  so a parent can add one without a restart - do not add caching there
+- Never build a path from a user-supplied list slug; match it against
+  `available_lists()` instead
 - Sound via `playSfx(name)`; register files with `loadSounds()` in `base.html`
 - Config comes from environment variables via `config.py` — never hardcode
   paths, secrets, or debug flags
@@ -72,7 +77,7 @@ when changing the challenge-word logic, `tests/test_word_stats.py`.
 
 ## Deployment Notes
 
-See `DEPLOYMENT.md` for the full procedure. The essentials:
+See `docs/DEPLOYMENT.md` for the full procedure. The essentials:
 
 - `FLASK_DEBUG` must stay off in production (Werkzeug debugger = RCE)
 - Set `SECRET_KEY` and `ACCESS_PIN` in `.env` (never committed)

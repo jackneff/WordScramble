@@ -61,7 +61,13 @@
                 </div>
 
                 <div class="flex justify-between text-xs text-[var(--text-muted)]">
-                    <span>{{ r.round_size }} words</span>
+                    <span>
+                        {%- if r.list_name -%}
+                            <span class="text-[var(--glow-purple)]">{{ r.list_name }}</span>
+                        {%- else -%}
+                            {{ r.round_size }} words
+                        {%- endif -%}
+                    </span>
                     <span>{{ r.hints_used }} hint{{ '' if r.hints_used == 1 else 's' }}</span>
                     <span>{{ r.started_at[:10] if r.started_at else '' }}</span>
                 </div>

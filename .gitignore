@@ -19,6 +19,6 @@ venv/
 # Source art and word-list PDFs (not needed to run the app)
 assets/
 
-# Local scratch notes
-docs/
-screenshots/
+# Scratch captures at the repo root. Anchored with a leading slash so it does
+# not also match docs/screenshots/, which the README embeds.
+/screenshots/

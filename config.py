@@ -27,6 +27,12 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-not-for-production")
     DB_PATH = os.environ.get("DB_PATH", os.path.join(BASE_DIR, "wordscramble.db"))
     WORDS_DIR = os.environ.get("WORDS_DIR", os.path.join(BASE_DIR, "static", "words"))
+
+    # Parent-supplied vocabulary lists ("this week's spelling words"). Any .txt
+    # file dropped here becomes a playable list, no restart needed.
+    LISTS_DIR = os.environ.get(
+        "LISTS_DIR", os.path.join(BASE_DIR, "static", "words", "lists")
+    )
     DEBUG = _bool("FLASK_DEBUG", False)
 
     # Optional shared-PIN gate. Unset (the default) leaves the app open.

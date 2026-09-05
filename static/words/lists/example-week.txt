@@ -1,0 +1,11 @@
+# Drop a .txt file in this folder and it becomes a playable list.
+# One word per line. Any lengths, any order. Lines starting with # are ignored.
+# The filename becomes the name shown in the game: example-week.txt -> "Example Week"
+planet
+rocket
+comet
+orbit
+galaxy
+gravity
+crater
+eclipse

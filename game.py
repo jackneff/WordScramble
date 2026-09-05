@@ -7,6 +7,7 @@ import random
 
 import database as db
 import scoring
+import wordlists
 from words import pick_words, scramble
 
 NORMAL = "normal"
@@ -31,12 +32,24 @@ def _presented(row, include_progress=False):
     return payload
 
 
-def choose_words(round_size, mode=NORMAL):
+def choose_words(round_size, mode=NORMAL, word_list=None):
     """Pick the words for a new round.
+
+    A named vocabulary list is played on its own terms: if it holds fewer words
+    than the requested round size, the round is simply shorter. Padding it with
+    unrelated words would defeat the point of practising that list.
 
     A challenge round is drawn from the practice list first and topped up with
     ordinary words when there are not enough of them yet.
     """
+    if word_list:
+        words = wordlists.get_list_words(word_list)
+        if not words:
+            return None
+        if len(words) <= round_size:
+            return random.sample(words, len(words))
+        return random.sample(words, round_size)
+
     if mode != CHALLENGE:
         return pick_words(round_size)
 
@@ -49,10 +62,17 @@ def choose_words(round_size, mode=NORMAL):
     return words
 
 
-def start_round(round_size, mode=NORMAL):
-    """Create a round and return its id plus the words to display."""
-    words = choose_words(round_size, mode)
-    round_id = db.create_round(len(words), words)
+def start_round(round_size, mode=NORMAL, word_list=None):
+    """Create a round and return its id plus the words to display.
+
+    Returns (None, None) if a named list was requested but no longer exists -
+    a parent can delete a list file between loading the page and pressing play.
+    """
+    words = choose_words(round_size, mode, word_list)
+    if not words:
+        return None, None
+
+    round_id = db.create_round(len(words), words, word_list=word_list)
     return round_id, [_presented(rw) for rw in db.get_round_words(round_id)]
 
 
@@ -167,6 +187,15 @@ def history_page(page=1, per_page=ROUNDS_PER_PAGE):
         pct = scoring.score_pct(r["total_score"], max_possible)
         r["stars"] = scoring.star_rating(pct)
         r["pct"] = round(pct)
+        # Fall back to the stored slug so history still reads sensibly after a
+        # list file is deleted.
+        if r["word_list"]:
+            r["list_name"] = (
+                wordlists.get_list_name(r["word_list"])
+                or r["word_list"].replace("-", " ").title()
+            )
+        else:
+            r["list_name"] = None
 
     return {
         "rounds": rounds,

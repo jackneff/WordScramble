@@ -94,7 +94,8 @@ routes/
   api.py      JSON API — parses and validates input, nothing else
 game.py       Game rules: start, check, hint, skip, summarise
 scoring.py    Points, hint cost, star thresholds
-words.py      Word list loading, weighted selection, scrambling
+words.py      Built-in word pool: loading, weighted selection, scrambling
+wordlists.py  Parent-supplied vocabulary lists
 database.py   All SQL, behind a connection() context manager
 auth.py       Optional shared-PIN gate
 templates/    Jinja2
@@ -110,7 +111,25 @@ spinning up HTTP.
 
 ## Common changes
 
-### Add or change words
+### Add a vocabulary list (the parent-facing way)
+
+Drop a `.txt` file in `static/words/lists/`, one word per line. It shows up in
+the home-screen picker immediately - the directory is read on every request, not
+cached, precisely so a parent can add this week's list without a restart.
+
+- The filename becomes the display name: `week-12.txt` -> "Week 12"
+- Filenames must match `[a-z0-9][a-z0-9_-]*.txt`; anything else is skipped
+- Only plain 3-12 letter words are kept, so `#` comment lines and stray
+  punctuation are ignored rather than breaking the list
+- Duplicates are removed; lists are capped at `MAX_WORDS_PER_LIST` (500)
+- A list shorter than the requested round size makes a shorter round; it is
+  never padded with unrelated words
+
+`wordlists.get_list_words()` matches the slug against the enumerated directory
+rather than joining it onto a path, so a crafted slug cannot escape the lists
+directory. `tests/test_wordlists.py` covers that.
+
+### Add or change words in the built-in pool
 
 Edit the file matching the word's length — `static/words/words_6.txt` for a
 six-letter word — one lowercase word per line. Adding a new length is just

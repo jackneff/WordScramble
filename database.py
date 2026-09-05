@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 
 from config import Config
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 _db_path = Config.DB_PATH
 
@@ -58,7 +58,8 @@ CREATE TABLE IF NOT EXISTS rounds (
     round_size INTEGER NOT NULL,
     total_score INTEGER DEFAULT 0,
     words_completed INTEGER DEFAULT 0,
-    hints_used INTEGER DEFAULT 0
+    hints_used INTEGER DEFAULT 0,
+    word_list TEXT
 );
 
 CREATE TABLE IF NOT EXISTS round_words (
@@ -107,6 +108,10 @@ def init_db():
                 "ALTER TABLE round_words ADD COLUMN wrong_attempts INTEGER DEFAULT 0"
             )
 
+        # v3: which vocabulary list a round was drawn from (NULL = all words).
+        if "word_list" not in _column_names(conn, "rounds"):
+            conn.execute("ALTER TABLE rounds ADD COLUMN word_list TEXT")
+
         conn.execute("PRAGMA user_version = " + str(SCHEMA_VERSION))
 
 
@@ -114,10 +119,13 @@ def init_db():
 # Rounds
 # --------------------------------------------------------------------------
 
-def create_round(round_size, words):
+def create_round(round_size, words, word_list=None):
     """Create a round and its words. Returns the new round id."""
     with connection() as conn:
-        cur = conn.execute("INSERT INTO rounds (round_size) VALUES (?)", (round_size,))
+        cur = conn.execute(
+            "INSERT INTO rounds (round_size, word_list) VALUES (?, ?)",
+            (round_size, word_list),
+        )
         round_id = cur.lastrowid
         conn.executemany(
             "INSERT INTO round_words (round_id, word, word_length, word_order)"
@@ -205,7 +213,7 @@ def get_history(limit=20, offset=0):
     with connection() as conn:
         rows = conn.execute(
             """SELECT r.id, r.started_at, r.finished_at, r.round_size,
-                      r.total_score, r.hints_used, r.words_completed,
+                      r.total_score, r.hints_used, r.words_completed, r.word_list,
                       COALESCE(SUM(rw.word_length), 0) AS total_letters
                FROM rounds r
                LEFT JOIN round_words rw ON rw.round_id = r.id

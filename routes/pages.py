@@ -5,6 +5,7 @@ from flask import Blueprint, redirect, render_template, request, url_for
 
 import database as db
 import game
+import wordlists
 
 bp = Blueprint("pages", __name__)
 
@@ -15,7 +16,12 @@ PATTERN_SUFFIX_LEN = 3
 
 @bp.route("/")
 def home():
-    return render_template("home.html")
+    lists = wordlists.available_lists()
+    return render_template(
+        "home.html",
+        word_lists=lists,
+        list_counts={entry["slug"]: entry["count"] for entry in lists},
+    )
 
 
 @bp.route("/game/<int:round_id>")

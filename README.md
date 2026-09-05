@@ -7,7 +7,20 @@ tracks which words keep causing trouble so it can serve them back later.
 Built for my daughter to practise her weekly spelling list. The mascot is her
 drawing; I vectorised it.
 
-![Gameplay](screenshots/gameplay.png)
+![Choosing a word list](docs/screenshots/01-home.png)
+
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/02-gameplay.png" alt="Unscrambling a word"></td>
+<td width="50%"><img src="docs/screenshots/03-correct.png" alt="Correct answer celebration"></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/04-summary.png" alt="Round complete summary"></td>
+<td><img src="docs/screenshots/05-challenge-words.png" alt="Challenge words tracking"></td>
+</tr>
+</table>
+
+<p align="center"><img src="docs/screenshots/06-my-scores.png" width="70%" alt="Score history"></p>
 
 **Python 3.10+ · Flask · SQLite · Alpine.js · Tailwind CSS · pytest**
 
@@ -18,6 +31,19 @@ drawing; I vectorised it.
 Then open <http://localhost:5000>. No build step, no bundler, no Node.
 
 ---
+
+## This week's spelling words
+
+Drop a `.txt` file into `static/words/lists/` — one word per line — and it
+appears in the picker on the home screen. No restart, no code change, no
+naming convention: `week-12.txt` becomes "Week 12". A parent can put the
+actual list from school into the game in about thirty seconds.
+
+A list is played on its own terms. Ask for a 15-word round from a 10-word
+list and you get a 10-word round, because padding it with unrelated words
+would defeat the point of practising that list. Words from a list feed the
+same challenge tracking as everything else, so the ones that keep going wrong
+resurface later.
 
 ## The interesting part
 
@@ -41,6 +67,7 @@ topping up with ordinary words when it's short.
 
 ## Features
 
+- **Custom word lists** — drop this week's spelling words in as a text file
 - Drag-and-drop **or** tap-to-place letter tiles; the first letter is given
 - Hints reveal the next correct letter for 15 points
 - 1–3 star ratings based on the round's share of a perfect score
@@ -57,7 +84,8 @@ config.py     Config / TestConfig, every value from an environment variable
 routes/       pages.py (HTML) and api.py (JSON) blueprints
 game.py       Game rules: start, check, hint, skip, summarise
 scoring.py    Points, hint cost, star thresholds
-words.py      Word list loading, weighted selection, scrambling
+words.py      Built-in word pool: loading, weighted selection, scrambling
+wordlists.py  Parent-supplied vocabulary lists, read fresh on every request
 database.py   All SQL, behind a connection() context manager
 auth.py       Optional shared-PIN gate
 ```
@@ -101,15 +129,16 @@ operational overhead with nothing to show for it at this scale.
 ./scripts/test.sh          # Windows: .\scripts\test.ps1
 ```
 
-47 tests covering the scoring rules, word selection, the hint and skip flows,
-challenge-word graduation, and the HTTP layer including the PIN gate. Each test
+82 tests covering the scoring rules, word selection, the hint and skip flows,
+challenge-word graduation, custom word lists (including path-traversal
+attempts), history paging, and the HTTP layer including the PIN gate. Each test
 runs against its own throwaway SQLite file.
 
 ## Documentation
 
-- **[DEVELOPMENT.md](DEVELOPMENT.md)** — setup, running, testing, and how to
+- **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** — setup, running, testing, and how to
   change words, scoring or the schema
-- **[DEPLOYMENT.md](DEPLOYMENT.md)** — gunicorn, systemd, nginx, HTTPS and
+- **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** — gunicorn, systemd, nginx, HTTPS and
   backups on a DigitalOcean droplet
 
 ## Credits

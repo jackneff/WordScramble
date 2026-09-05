@@ -22,3 +22,6 @@ assets/
 # Scratch captures at the repo root. Anchored with a leading slash so it does
 # not also match docs/screenshots/, which the README embeds.
 /screenshots/
+
+# Personal notes kept alongside the code but never published
+*.local.md

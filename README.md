@@ -154,3 +154,11 @@ including the PIN gate. Each test runs against its own throwaway SQLite file.
 - Vectorisation and code — me
 - Word lists — [k5learning.com](https://www.k5learning.com)
 - Sound effects — [Pixabay](https://pixabay.com)
+
+## License
+
+The code is [MIT licensed](LICENSE) — use it however you like.
+
+**The artwork is not.** The mascot was drawn by my daughter and all rights to
+it are reserved. If you build on this project, please swap in your own
+character art.

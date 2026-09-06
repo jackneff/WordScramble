@@ -39,15 +39,28 @@ cd "$APP_DIR" || fail "$APP_DIR does not exist"
 BIND=$(systemctl cat "$SERVICE" 2>/dev/null | sed -n 's/.*--bind[= ]\+\([0-9.]\+:[0-9]\+\).*/\1/p' | head -1)
 BIND="${BIND:-127.0.0.1:8000}"
 
-# DB_PATH comes from .env unless the caller overrides it.
-if [[ -z "${DB_PATH:-}" && -f .env ]]; then
-    DB_PATH=$(sed -n 's/^DB_PATH=//p' .env | tail -1)
+# DB_PATH comes from .env unless the caller overrides it. Tolerates `export`,
+# surrounding quotes, stray whitespace and CRLF endings, and reports why it came
+# up empty rather than quietly skipping the backup.
+DB_SOURCE="the DB_PATH environment variable"
+if [[ -z "${DB_PATH:-}" ]]; then
+    DB_SOURCE="$APP_DIR/.env"
+    if [[ ! -e .env ]]; then
+        DB_NOTE="no .env file in $APP_DIR"
+    elif [[ ! -r .env ]]; then
+        DB_NOTE=".env is not readable by $(id -un)"
+    else
+        DB_PATH=$(sed -n 's/\r$//; s/^[[:space:]]*//; s/^export[[:space:]]\{1,\}//; s/^DB_PATH[[:space:]]*=[[:space:]]*//p' .env | tail -1)
+        DB_PATH="${DB_PATH%\"}"; DB_PATH="${DB_PATH#\"}"
+        DB_PATH="${DB_PATH%\'}"; DB_PATH="${DB_PATH#\'}"
+        [[ -z "$DB_PATH" ]] && DB_NOTE="no DB_PATH= line in .env"
+    fi
 fi
 
 say "Current state"
 echo "  app       $APP_DIR"
 echo "  service   $SERVICE ($(systemctl is-active "$SERVICE" 2>/dev/null || echo unknown), bound to $BIND)"
-echo "  database  ${DB_PATH:-<unset>}"
+echo "  database  ${DB_PATH:-<unset> (${DB_NOTE:-unknown})}"
 echo "  deployed  $(git rev-parse --short HEAD) $(git log -1 --format=%s)"
 
 say "Fetching"
@@ -68,6 +81,10 @@ fi
 if [[ -n "$(git status --porcelain)" ]]; then
     echo
     git --no-pager status --short | sed 's/^/    /'
+    echo
+    echo "  M = a tracked file was edited on the server; ?? = an untracked stray."
+    echo "  A deploy never touches untracked files, so if that is all you see:"
+    echo "    git status --porcelain | grep -v '^??'   # empty means it is safe to ignore"
     fail "the working tree on the server has local changes - resolve them first"
 fi
 
@@ -77,14 +94,19 @@ if [[ $CHECK_ONLY -eq 1 ]]; then
 fi
 
 say "Backing up the database"
-if [[ -n "${DB_PATH:-}" && -f "$DB_PATH" ]]; then
+if [[ -z "${DB_PATH:-}" ]]; then
+    # Deploying with no backup is a real risk, not a detail - make it deliberate.
+    echo "  cannot locate the database: ${DB_NOTE:-DB_PATH is unset} (looked in $DB_SOURCE)"
+    read -r -p "  Deploy WITHOUT a backup? [y/N] " reply </dev/tty
+    [[ "$reply" == [yY] ]] || fail "stopped - re-run as DB_PATH=/path/to/wordscramble.db $0"
+elif [[ -f "$DB_PATH" ]]; then
     sudo mkdir -p "$BACKUP_DIR"
     STAMP=$(date +%F-%H%M%S)
     # .backup is safe on a live database; cp is not.
     sudo sqlite3 "$DB_PATH" ".backup '$BACKUP_DIR/pre-deploy-$STAMP.db'"
     echo "  $BACKUP_DIR/pre-deploy-$STAMP.db"
 else
-    echo "  no database at '${DB_PATH:-<unset>}' yet - skipping"
+    echo "  $DB_PATH does not exist yet - nothing to back up"
 fi
 
 say "Updating the code to $TARGET"

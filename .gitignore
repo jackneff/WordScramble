@@ -25,3 +25,5 @@ assets/
 
 # Personal notes kept alongside the code but never published
 *.local.md
+
+temp/

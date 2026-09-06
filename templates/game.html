@@ -36,10 +36,11 @@
     </div>
 
     <!-- Game card -->
-    <div class="game-card p-6 md:p-10 w-full" x-show="!roundComplete">
+    <div class="game-card p-3 sm:p-6 md:p-10 w-full" x-show="!roundComplete">
 
         <!-- Answer blocks -->
-        <div class="flex justify-center gap-3 mb-10 flex-wrap" :class="{ 'shake': shaking }">
+        <div class="letter-row mb-10" :class="{ 'shake': shaking }"
+             :style="{ '--n': answerBlocks.length }">
             <template x-for="(block, i) in answerBlocks" :key="i">
                 <div class="answer-block"
                      :class="{
@@ -58,7 +59,7 @@
         </div>
 
         <!-- Scrambled letter tiles -->
-        <div class="flex justify-center gap-3 mb-8 flex-wrap">
+        <div class="letter-row mb-8" :style="{ '--n': tiles.length }">
             <template x-for="(tile, i) in tiles" :key="tile.id">
                 <div class="letter-tile"
                      :class="[

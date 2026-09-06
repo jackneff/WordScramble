@@ -7,7 +7,7 @@
 <div x-data x-init="playSfx('gameWin'); setTimeout(() => spawnSparkles(document.getElementById('page-sparkles'), { originY: 0.33, spread: 0.6, clearAfter: 2000 }), 350)" class="flex flex-col items-center pt-8">
     <img src="{{ url_for('static', filename='images/creature.svg') }}"
          alt="Game mascot" class="w-28 h-28 mb-4 animate-drop-in">
-    <h1 class="text-5xl font-bold text-white mb-2 animate-drop-in-delayed">Round Complete!</h1>
+    <h1 class="text-5xl font-bold text-white mb-2 text-center animate-drop-in-delayed">Round Complete!</h1>
 
     <!-- Star Rating -->
     <div class="text-5xl my-6 animate-drop-in-3">

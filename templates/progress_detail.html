@@ -1,19 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Word Scramble - Scores{% endblock %}
+{% block title %}Word Scramble - {{ profile.name }}'s Progress{% endblock %}
 
 {% block content %}
 <div class="flex flex-col items-center pt-8">
-    <h1 class="text-4xl font-bold text-white mb-8">
-        {{ active_player.name }}'s Scores
-    </h1>
+    <h1 class="text-4xl font-bold text-white mb-8">{{ profile.name }}'s Progress</h1>
 
     {% if not rounds %}
     <div class="game-card p-12 text-center w-full max-w-md">
-        <p class="text-xl text-[var(--text-muted)] mb-6">No games played yet!</p>
-        <a href="{{ url_for('pages.home') }}"
-           class="btn-glow bg-[var(--glow-blue)] text-white py-3 px-8 rounded-xl text-xl font-bold inline-block">
-            Play Now
-        </a>
+        <p class="text-xl text-[var(--text-muted)]">No games played yet.</p>
     </div>
     {% else %}
 
@@ -82,7 +76,7 @@
     {% if total_pages > 1 %}
     <nav class="flex items-center gap-4 mt-8" aria-label="Score history pages">
         {% if has_prev %}
-        <a href="{{ url_for('pages.history', page=page - 1) }}"
+        <a href="{{ url_for('pages.progress_detail', player_id=profile.id, page=page - 1) }}"
            class="btn-glow bg-[var(--bg-card)] text-white py-2 px-5 rounded-xl font-semibold border border-white/20">
             &larr; Newer
         </a>
@@ -93,7 +87,7 @@
         <span class="text-[var(--text-muted)]">Page {{ page }} of {{ total_pages }}</span>
 
         {% if has_next %}
-        <a href="{{ url_for('pages.history', page=page + 1) }}"
+        <a href="{{ url_for('pages.progress_detail', player_id=profile.id, page=page + 1) }}"
            class="btn-glow bg-[var(--bg-card)] text-white py-2 px-5 rounded-xl font-semibold border border-white/20">
             Older &rarr;
         </a>
@@ -105,8 +99,32 @@
 
     {% endif %}
 
-    <a href="{{ url_for('pages.home') }}" class="mt-8 text-[var(--glow-blue)] hover:underline text-lg">
-        Back to Home
+    <!-- Challenge words -->
+    {% if words %}
+    <div class="w-full max-w-lg mt-10">
+        <h2 class="text-2xl font-bold text-white mb-4">Words Needing Practice</h2>
+        <div class="flex flex-col gap-3">
+            {% for w in words %}
+            <div class="game-card p-4 flex items-center gap-4">
+                <div class="text-xl font-bold text-white w-28 flex-shrink-0 capitalize">{{ w.word }}</div>
+                <div class="flex-1 flex flex-col gap-1 min-w-0">
+                    <div class="flex items-center justify-between text-sm text-[var(--text-muted)]">
+                        <span>Streak</span>
+                        <span>{{ w.consecutive_correct }}/{{ graduation_streak }}</span>
+                    </div>
+                    <div class="progress-track h-2">
+                        <div class="progress-fill"
+                             style="width: {{ (w.consecutive_correct / graduation_streak * 100) | int }}%"></div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <a href="{{ url_for('pages.progress') }}" class="mt-8 text-[var(--glow-blue)] hover:underline text-lg">
+        Back to Progress
     </a>
 </div>
 {% endblock %}

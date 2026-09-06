@@ -141,19 +141,19 @@ def test_path_traversal_is_rejected(lists_dir, tmp_path):
 
 # --- playing a list --------------------------------------------------------
 
-def test_a_round_is_drawn_only_from_the_chosen_list(app, lists_dir):
+def test_a_round_is_drawn_only_from_the_chosen_list(app, player_id, lists_dir):
     write_list(lists_dir, "week-12.txt", ["planet", "rocket", "comet", "orbit", "galaxy"])
 
-    chosen = game.choose_words(5, word_list="week-12")
+    chosen = game.choose_words(5, player_id, word_list="week-12")
 
     assert sorted(chosen) == ["comet", "galaxy", "orbit", "planet", "rocket"]
 
 
-def test_a_short_list_makes_a_short_round(app, lists_dir):
+def test_a_short_list_makes_a_short_round(app, player_id, lists_dir):
     """A 3-word list is played as a 3-word round, not padded with other words."""
     write_list(lists_dir, "short.txt", ["planet", "rocket", "comet"])
 
-    round_id, words = game.start_round(10, word_list="short")
+    round_id, words = game.start_round(10, player_id, word_list="short")
 
     assert len(words) == 3
     assert db.get_round(round_id)["round_size"] == 3
@@ -161,64 +161,64 @@ def test_a_short_list_makes_a_short_round(app, lists_dir):
     assert stored == {"planet", "rocket", "comet"}
 
 
-def test_a_long_list_is_sampled_down_to_the_round_size(app, lists_dir):
+def test_a_long_list_is_sampled_down_to_the_round_size(app, player_id, lists_dir):
     write_list(lists_dir, "big.txt", make_words(60))
 
-    _, words = game.start_round(5, word_list="big")
+    _, words = game.start_round(5, player_id, word_list="big")
 
     assert len(words) == 5
 
 
-def test_the_round_records_which_list_it_used(app, lists_dir):
+def test_the_round_records_which_list_it_used(app, player_id, lists_dir):
     write_list(lists_dir, "week-12.txt", ["planet", "rocket", "comet"])
 
-    round_id, _ = game.start_round(5, word_list="week-12")
+    round_id, _ = game.start_round(5, player_id, word_list="week-12")
 
     assert db.get_round(round_id)["word_list"] == "week-12"
 
 
-def test_a_normal_round_records_no_list(app):
-    round_id, _ = game.start_round(5)
+def test_a_normal_round_records_no_list(app, player_id):
+    round_id, _ = game.start_round(5, player_id)
 
     assert db.get_round(round_id)["word_list"] is None
 
 
-def test_starting_a_deleted_list_fails_cleanly(app, lists_dir):
-    assert game.start_round(5, word_list="gone") == (None, None)
+def test_starting_a_deleted_list_fails_cleanly(app, player_id, lists_dir):
+    assert game.start_round(5, player_id, word_list="gone") == (None, None)
 
 
-def test_history_shows_the_list_name(app, lists_dir):
+def test_history_shows_the_list_name(app, player_id, lists_dir):
     write_list(lists_dir, "week-12.txt", ["planet", "rocket", "comet"])
-    round_id, _ = game.start_round(5, word_list="week-12")
+    round_id, _ = game.start_round(5, player_id, word_list="week-12")
     for row in db.get_round_words(round_id):
         game.check_answer(row["id"], row["word"])
 
-    entry = game.history_page(1)["rounds"][0]
+    entry = game.history_page(player_id, 1)["rounds"][0]
 
     assert entry["list_name"] == "Week 12"
 
 
-def test_history_still_names_a_deleted_list(app, lists_dir):
+def test_history_still_names_a_deleted_list(app, player_id, lists_dir):
     write_list(lists_dir, "week-12.txt", ["planet", "rocket", "comet"])
-    round_id, _ = game.start_round(5, word_list="week-12")
+    round_id, _ = game.start_round(5, player_id, word_list="week-12")
     for row in db.get_round_words(round_id):
         game.check_answer(row["id"], row["word"])
 
     (lists_dir / "week-12.txt").unlink()
 
-    assert game.history_page(1)["rounds"][0]["list_name"] == "Week 12"
+    assert game.history_page(player_id, 1)["rounds"][0]["list_name"] == "Week 12"
 
 
-def test_list_words_feed_the_challenge_tracker(app, lists_dir):
+def test_list_words_feed_the_challenge_tracker(app, player_id, lists_dir):
     """Words from a parent's list must earn practice tracking like any other."""
     write_list(lists_dir, "week-12.txt", ["planet", "rocket", "comet"])
-    round_id, _ = game.start_round(5, word_list="week-12")
+    round_id, _ = game.start_round(5, player_id, word_list="week-12")
 
     row = db.get_round_words(round_id)[0]
     game.check_answer(row["id"], "wrong")
     game.check_answer(row["id"], row["word"])
 
-    assert row["word"] in [w["word"] for w in db.get_challenge_words()]
+    assert row["word"] in [w["word"] for w in db.get_challenge_words(player_id)]
 
 
 # --- HTTP ------------------------------------------------------------------

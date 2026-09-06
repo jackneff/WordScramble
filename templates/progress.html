@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Word Scramble - Progress{% endblock %}
+
+{% block content %}
+<div class="flex flex-col items-center pt-8">
+    <h1 class="text-4xl font-bold text-white mb-2">Progress</h1>
+    <p class="text-[var(--text-muted)] text-lg mb-8">
+        A read-only look at every profile - viewing this never starts or resumes a game.
+    </p>
+
+    {% if not cards %}
+    <div class="game-card p-12 text-center w-full max-w-md">
+        <p class="text-xl text-[var(--text-muted)]">No profiles yet.</p>
+    </div>
+    {% else %}
+    <div class="w-full max-w-lg space-y-4">
+        {% for card in cards %}
+        <a href="{{ url_for('pages.progress_detail', player_id=card.player.id) }}"
+           class="game-card p-5 flex items-center gap-4 block hover:ring-2 hover:ring-[var(--glow-blue)] transition-all">
+            <div class="text-3xl shrink-0">🧑‍🚀</div>
+            <div class="flex-1 min-w-0">
+                <div class="text-white font-bold text-lg mb-1">{{ card.player.name }}</div>
+                <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--text-muted)]">
+                    <span>{{ card.stats.rounds_played }} {{ 'game' if card.stats.rounds_played == 1 else 'games' }}</span>
+                    <span>best {{ card.stats.best_score }}</span>
+                    <span>{{ card.stats.avg_stars }}<span class="star filled">&#9733;</span> avg</span>
+                    {% if card.last_played %}
+                    <span>last played {{ card.last_played[:10] }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <a href="{{ url_for('players.picker') }}" class="mt-8 text-[var(--glow-blue)] hover:underline text-lg">
+        Back to Profiles
+    </a>
+</div>
+{% endblock %}

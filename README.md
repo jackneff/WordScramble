@@ -51,6 +51,19 @@ would defeat the point of practising that list. Words from a list feed the
 same challenge tracking as everything else, so the ones that keep going wrong
 resurface later.
 
+## Who's playing?
+
+The first screen is a profile picker, not a login. Pick a name (or add a new
+one) and every score, round and challenge word from then on is that profile's
+alone — a sibling playing later doesn't see or continue anyone else's round.
+There are no passwords here; Cloudflare Access is what decides who reaches the
+app at all, and profiles just keep the people it lets in from playing on top
+of each other.
+
+A parent gets a separate, read-only **Progress** view that lists every
+profile's stats and history. Opening it never signs you in as that profile
+and never touches whatever round they currently have open.
+
 ## The interesting part
 
 Most spelling apps for kids are drill-and-repeat: the same words in the same
@@ -73,6 +86,10 @@ topping up with ordinary words when it's short.
 
 ## Features
 
+- **Player profiles** — a "Who's Playing?" picker keeps everyone's scores,
+  history and challenge words separate; no passwords, just pick a name
+- **A read-only parent dashboard** — see any profile's progress without
+  logging in as them or disturbing whatever round they're mid-way through
 - **Custom word lists** — paste or upload this week's spelling words from the browser
 - Drag-and-drop **or** tap-to-place letter tiles; the first letter is given
 - Hints reveal the next correct letter for 15 points
@@ -87,13 +104,15 @@ topping up with ordinary words when it's short.
 ```
 app.py        create_app() factory; wsgi.py is the production entry point
 config.py     Config / TestConfig, every value from an environment variable
-routes/       pages.py (HTML), api.py (JSON), lists.py (list management)
+routes/       pages.py (HTML), api.py (JSON), lists.py (list management),
+              players.py (the profile picker)
 game.py       Game rules: start, check, hint, skip, summarise
 scoring.py    Points, hint cost, star thresholds
 words.py      Built-in word pool: loading, weighted selection, scrambling
 wordlists.py  Parent-supplied vocabulary lists, read fresh on every request
 database.py   All SQL, behind a connection() context manager
 auth.py       Cloudflare Access gate (off by default, for local dev)
+players.py    The active profile: session, not authentication
 security.py   CSRF tokens for state-changing requests
 ```
 
@@ -136,11 +155,13 @@ operational overhead with nothing to show for it at this scale.
 ./scripts/test.sh          # Windows: .\scripts\test.ps1
 ```
 
-124 tests covering the scoring rules, word selection, the hint and skip flows,
+138 tests covering the scoring rules, word selection, the hint and skip flows,
 challenge-word graduation, custom word lists and their upload path (including
 traversal attempts and oversized bodies), history paging, the HTTP layer, CSRF
-rejection, and the Cloudflare Access gate (expired, forged and wrong-audience
-tokens). Each test runs against its own throwaway SQLite file.
+rejection, the Cloudflare Access gate (expired, forged and wrong-audience
+tokens), player-profile isolation (a second profile can't read or resume the
+first one's round), and the migration that attributes pre-profile history to
+a default profile. Each test runs against its own throwaway SQLite file.
 
 ## Documentation
 

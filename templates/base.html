@@ -3,6 +3,7 @@
     ('pages.history', 'My Scores'),
     ('pages.challenge', 'Challenge Words'),
     ('lists.manage', 'Word Lists'),
+    ('pages.progress', 'Progress'),
 ] %}
 <!DOCTYPE html>
 <html lang="en">
@@ -56,10 +57,16 @@
                 </a>
 
                 <!-- Desktop links -->
-                <div class="hidden md:flex gap-4">
+                <div class="hidden md:flex items-center gap-4">
                     {% for endpoint, label in nav_links %}
                     <a href="{{ url_for(endpoint) }}" class="text-[var(--text-muted)] hover:text-white transition-colors">{{ label }}</a>
                     {% endfor %}
+                    {% if active_player %}
+                    <a href="{{ url_for('players.picker') }}"
+                       class="text-sm text-[var(--glow-purple)] border border-[var(--glow-purple)]/40 rounded-lg px-3 py-1 hover:bg-[var(--glow-purple)]/10 transition-colors">
+                        {{ active_player.name }} &middot; Switch
+                    </a>
+                    {% endif %}
                 </div>
 
                 <!-- Mobile menu button -->
@@ -83,6 +90,12 @@
             <div id="mobile-menu" x-show="open" x-transition x-cloak
                  @click="open = false"
                  class="md:hidden mt-3 flex flex-col rounded-xl bg-[var(--bg-secondary)] border border-white/10 overflow-hidden">
+                {% if active_player %}
+                <a href="{{ url_for('players.picker') }}"
+                   class="px-5 py-3 text-[var(--glow-purple)] hover:text-white hover:bg-white/10 transition-colors border-b border-white/5">
+                    {{ active_player.name }} &middot; Switch profile
+                </a>
+                {% endif %}
                 {% for endpoint, label in nav_links %}
                 <a href="{{ url_for(endpoint) }}"
                    class="px-5 py-3 text-[var(--text-muted)] hover:text-white hover:bg-white/10 transition-colors border-b border-white/5 last:border-0">{{ label }}</a>

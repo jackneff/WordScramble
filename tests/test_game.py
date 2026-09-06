@@ -113,14 +113,14 @@ def test_summary_uses_real_word_lengths_for_stars(round_words):
     assert summary["stars"] == 3
 
 
-def test_history_and_summary_agree_on_stars(round_words):
+def test_history_and_summary_agree_on_stars(round_words, player_id):
     """Regression: history used to assume 50 points per word regardless of length."""
     round_id, rows = round_words
     game.check_answer(rows[0]["id"], "cat")
     game.check_answer(rows[1]["id"], "house")
 
     import scoring
-    entry = next(r for r in db.get_history() if r["id"] == round_id)
+    entry = next(r for r in db.get_history(player_id) if r["id"] == round_id)
     history_stars = scoring.star_rating(
         scoring.score_pct(entry["total_score"],
                           entry["total_letters"] * scoring.POINTS_PER_LETTER)

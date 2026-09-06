@@ -38,18 +38,43 @@ backups). Update them when the workflow changes.
 ```
 app.py        create_app() factory; wsgi.py is the production entry point
 config.py     Config/TestConfig, all values from environment variables
-routes/       pages.py (HTML), api.py (JSON), lists.py (list management)
+routes/       pages.py (HTML), api.py (JSON), lists.py (list management),
+              players.py (the profile picker: create/select/delete)
 game.py       Game rules: start/check/hint/skip/summarise
 scoring.py    Points, hint cost, star thresholds
 words.py      Built-in word pool: loading, weighted selection, scrambling
 wordlists.py  Parent-supplied vocabulary lists (static/words/lists/*.txt)
 database.py   All SQL; connection() context manager commits/rolls back/closes
 auth.py       Cloudflare Access gate, enabled by AUTH_MODE=cloudflare
+players.py    session['player_id']: the active profile, not an identity
 security.py   CSRF tokens on every state-changing request
 ```
 
 Layering rule: **routes → game → database**. Routes never contain SQL or game
 rules; `game.py` never touches `request` or `render_template`.
+
+## Player profiles
+
+Every player shares one Cloudflare Access login but plays under their own
+profile — a `players` row, selected via the "Who's Playing?" picker and held
+in `session['player_id']` (`players.py`). This is attribution and isolation,
+**not** a second authentication layer: `auth.py` and Cloudflare Access remain
+the only security boundary, and `players.py` is deliberately a separate
+module so that distinction doesn't blur.
+
+- Every query touching `rounds`, `round_words` or `word_stats` takes a
+  `player_id` and filters or attributes by it, all the way down to
+  `database.py`. A query that forgets the filter leaks one player's data to
+  another, not just a wrong result.
+- Every route that takes a `round_id` or `round_word_id` from the URL or a
+  request body must check it belongs to the active player before touching it
+  — `game.player_owns_round()` / `game.player_owns_round_word()` — and 404 if
+  not. This check, not the schema, is what actually stops one player from
+  reading or resuming another's in-progress round.
+- `/progress` and `/progress/<player_id>` are the parent-facing dashboard:
+  read-only, and they must never call `players.set_current_player()`.
+  Looking at a profile's progress must never sign into it or touch whatever
+  round it currently has open.
 
 ## Key Conventions
 
@@ -78,8 +103,12 @@ rules; `game.py` never touches `request` or `render_template`.
 ## Testing
 
 `pytest` — tests use a temporary SQLite file per test via the `app` fixture in
-`tests/conftest.py`. When changing game rules, update `tests/test_game.py`;
-when changing the challenge-word logic, `tests/test_word_stats.py`.
+`tests/conftest.py`, which also creates one default profile (`player_id`
+fixture); `other_player_id` and `make_client` exist for tests that need a
+second profile. When changing game rules, update `tests/test_game.py`; when
+changing the challenge-word logic, `tests/test_word_stats.py`; when changing
+anything about profiles, isolation or the schema migration,
+`tests/test_players.py`.
 
 ## Deployment Notes
 

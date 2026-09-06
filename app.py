@@ -8,9 +8,10 @@ from flask import Flask, flash, redirect, url_for
 
 import auth
 import database as db
+import players
 import security
 from config import AUTH_CLOUDFLARE, DEV_SECRET_KEY, Config
-from routes import api_bp, lists_bp, pages_bp
+from routes import api_bp, lists_bp, pages_bp, players_bp
 
 
 def create_app(config_object=Config):
@@ -24,12 +25,14 @@ def create_app(config_object=Config):
     app.register_blueprint(pages_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(lists_bp)
+    app.register_blueprint(players_bp)
 
     # Order matters: before_request hooks run in registration order, so an
     # unauthenticated request should be turned away as unauthenticated rather
     # than told its CSRF token is missing.
     auth.register_guard(app)
     security.register_csrf(app)
+    players.register_context(app)
     _register_error_handlers(app)
 
     return app

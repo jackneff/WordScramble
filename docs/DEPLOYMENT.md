@@ -12,8 +12,9 @@ droplet has no open ports at all, so there is no origin to attack around
 Cloudflare. The app then re-checks the signed assertion itself (`auth.py`) --
 including its audience, which is what stops a token issued for some other app
 in the same Cloudflare team from working here. `SECRET_KEY` signs the session
-cookie, which now carries only flash messages. CSRF tokens protect `/lists`,
-where files are written and deleted.
+cookie, which carries the CSRF token, the active player profile, and flash
+messages - never an identity. CSRF tokens protect `/lists` and every other
+state-changing route, including the player picker.
 
 There is no nginx and no certbot in this setup: Cloudflare terminates TLS, and
 gunicorn serves `/static/` itself. That is a small performance cost and one
@@ -284,6 +285,13 @@ there is nothing to keep in step. Override `APP_DIR`, `SERVICE`, `DB_PATH` or
 
 Schema changes apply themselves on startup — `init_db()` runs from the app
 factory.
+
+The upgrade that introduced player profiles is heavier than most: it rebuilds
+`word_stats` wholesale (SQLite can't `ALTER` a primary key) and attributes
+every pre-existing round and word-stat row to one default profile. It's a
+one-time migration and idempotent, but it's the reason `deploy.sh` backs the
+database up before restarting the service rather than after — if anything
+looks wrong post-deploy, restore that backup rather than debugging live.
 
 ## Checking on it
 

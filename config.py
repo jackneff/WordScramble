@@ -60,13 +60,20 @@ class Config:
     ROUND_SIZES = (5, 10, 15)
     DEFAULT_ROUND_SIZE = 10
 
+    # Player profiles. No passwords - Cloudflare Access is the gate in front
+    # of all of them - just a name to attribute rounds and stats to. The
+    # default name is only ever used once, to migrate pre-profile history.
+    DEFAULT_PLAYER_NAME = os.environ.get("DEFAULT_PLAYER_NAME") or "Player 1"
+    MAX_PLAYERS = int(os.environ.get("MAX_PLAYERS", 8))
+
     # A word list is a small text file; anything larger is a mistake or an
     # attack. Flask turns an oversized body into a 413 before we read it.
     MAX_CONTENT_LENGTH = 256 * 1024
 
-    # Session cookie hardening. Sessions now carry only flash messages -
-    # Cloudflare Access holds the identity - but they are still signed with
-    # SECRET_KEY, so the key still has to be a real one in production.
+    # Session cookie hardening. The session carries the CSRF token, the
+    # active player_id, and flash messages - never an identity. Cloudflare
+    # Access holds that. But the cookie is still signed with SECRET_KEY, so
+    # the key still has to be a real one in production.
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = _bool("SESSION_COOKIE_SECURE", False)

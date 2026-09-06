@@ -10,7 +10,7 @@ from config import TestConfig
 
 
 def test_pages_render(client):
-    for path in ("/", "/history", "/challenge"):
+    for path in ("/", "/history", "/challenge", "/progress", "/players"):
         assert client.get(path).status_code == 200
 
 
@@ -47,7 +47,7 @@ def test_api_rejects_unknown_and_malformed_word_ids(client):
         assert client.post("/api/hint", json=payload).status_code == 404
 
 
-def test_playing_a_round_end_to_end(client, app):
+def test_playing_a_round_end_to_end(client, app, player_id):
     round_id = client.post("/api/start", json={"round_size": 5}).get_json()["round_id"]
 
     for row in db.get_round_words(round_id):
@@ -60,4 +60,4 @@ def test_playing_a_round_end_to_end(client, app):
 
     assert db.get_round(round_id)["finished_at"] is not None
     assert client.get(f"/summary/{round_id}").status_code == 200
-    assert len(db.get_history()) == 1
+    assert len(db.get_history(player_id)) == 1

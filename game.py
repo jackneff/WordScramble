@@ -32,15 +32,15 @@ def _presented(row, include_progress=False):
     return payload
 
 
-def choose_words(round_size, mode=NORMAL, word_list=None):
+def choose_words(round_size, player_id, mode=NORMAL, word_list=None):
     """Pick the words for a new round.
 
     A named vocabulary list is played on its own terms: if it holds fewer words
     than the requested round size, the round is simply shorter. Padding it with
     unrelated words would defeat the point of practising that list.
 
-    A challenge round is drawn from the practice list first and topped up with
-    ordinary words when there are not enough of them yet.
+    A challenge round is drawn from the player's own practice list first and
+    topped up with ordinary words when there are not enough of them yet.
     """
     if word_list:
         words = wordlists.get_list_words(word_list)
@@ -53,7 +53,7 @@ def choose_words(round_size, mode=NORMAL, word_list=None):
     if mode != CHALLENGE:
         return pick_words(round_size)
 
-    challenge = [row["word"] for row in db.get_challenge_words()]
+    challenge = [row["word"] for row in db.get_challenge_words(player_id)]
     if len(challenge) >= round_size:
         return random.sample(challenge, round_size)
 
@@ -62,17 +62,17 @@ def choose_words(round_size, mode=NORMAL, word_list=None):
     return words
 
 
-def start_round(round_size, mode=NORMAL, word_list=None):
+def start_round(round_size, player_id, mode=NORMAL, word_list=None):
     """Create a round and return its id plus the words to display.
 
     Returns (None, None) if a named list was requested but no longer exists -
     a parent can delete a list file between loading the page and pressing play.
     """
-    words = choose_words(round_size, mode, word_list)
+    words = choose_words(round_size, player_id, mode, word_list)
     if not words:
         return None, None
 
-    round_id = db.create_round(len(words), words, word_list=word_list)
+    round_id = db.create_round(len(words), words, player_id, word_list=word_list)
     return round_id, [_presented(rw) for rw in db.get_round_words(round_id)]
 
 
@@ -88,6 +88,18 @@ def get_round_state(round_id):
         "words_completed": rnd["words_completed"],
         "words": [_presented(rw, include_progress=True) for rw in db.get_round_words(round_id)],
     }
+
+
+def player_owns_round(player_id, round_id):
+    """Whether a round belongs to this player. False for an unknown round."""
+    owner = db.get_round_owner(round_id)
+    return owner is not None and owner == player_id
+
+
+def player_owns_round_word(player_id, round_word_id):
+    """Whether a round word's round belongs to this player."""
+    owner = db.get_round_word_owner(round_word_id)
+    return owner is not None and owner == player_id
 
 
 def _finish_if_complete(round_id):
@@ -108,7 +120,8 @@ def check_answer(round_word_id, answer, elapsed_seconds=0):
         score = scoring.word_score(rw["word_length"], rw["hints_used"])
         db.solve_word(round_word_id, score)
         rw = db.get_round_word(round_word_id)
-        db.record_word_result(rw["word"], elapsed_seconds, rw["wrong_attempts"])
+        player_id = db.get_round_owner(rw["round_id"])
+        db.record_word_result(player_id, rw["word"], elapsed_seconds, rw["wrong_attempts"])
         _finish_if_complete(rw["round_id"])
     elif not correct and not rw["solved"]:
         db.increment_wrong_attempts(round_word_id)
@@ -123,7 +136,7 @@ def skip_word(round_word_id):
         return None
     if not rw["solved"]:
         db.solve_word(round_word_id, 0)
-        db.record_word_skipped(rw["word"])
+        db.record_word_skipped(db.get_round_owner(rw["round_id"]), rw["word"])
         _finish_if_complete(rw["round_id"])
     return {"word": rw["word"].upper()}
 
@@ -155,13 +168,13 @@ def _stars_for(total_score, total_letters):
     return scoring.star_rating(scoring.score_pct(total_score, max_possible))
 
 
-def lifetime_stats():
-    """Totals across every finished round, independent of the page shown.
+def lifetime_stats(player_id):
+    """Totals across a player's finished rounds, independent of the page shown.
 
     The best round is found across the whole history rather than the current
     page, so the badge stays correct once older rounds scroll off.
     """
-    rows = db.get_round_scores()
+    rows = db.get_round_scores(player_id)
     if not rows:
         return {"rounds_played": 0, "best_score": 0, "best_id": None, "avg_stars": 0}
 
@@ -175,13 +188,13 @@ def lifetime_stats():
     }
 
 
-def history_page(page=1, per_page=ROUNDS_PER_PAGE):
-    """One page of history, with star ratings and pagination metadata."""
-    total = db.count_finished_rounds()
+def history_page(player_id, page=1, per_page=ROUNDS_PER_PAGE):
+    """One page of a player's history, with star ratings and pagination metadata."""
+    total = db.count_finished_rounds(player_id)
     total_pages = max(1, -(-total // per_page))  # ceiling division
     page = max(1, min(page, total_pages))
 
-    rounds = db.get_history(limit=per_page, offset=(page - 1) * per_page)
+    rounds = db.get_history(player_id, limit=per_page, offset=(page - 1) * per_page)
     for r in rounds:
         max_possible = r["total_letters"] * scoring.POINTS_PER_LETTER
         pct = scoring.score_pct(r["total_score"], max_possible)

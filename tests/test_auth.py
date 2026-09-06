@@ -11,6 +11,7 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 import auth
+import database as db
 from app import create_app
 from config import TestConfig
 
@@ -50,7 +51,9 @@ def cf_app(tmp_path, keypair, monkeypatch):
             return StubKey()
 
     monkeypatch.setattr(auth, "_jwks_client", lambda app: StubClient())
-    return create_app(Cloudflare)
+    application = create_app(Cloudflare)
+    application.config["TEST_PLAYER_ID"] = db.create_player("Test Player")
+    return application
 
 
 @pytest.fixture

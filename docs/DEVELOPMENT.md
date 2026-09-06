@@ -64,7 +64,7 @@ in the browser. The SQLite database is created on first run.
 ## Testing
 
 ```powershell
-.\scripts\test.ps1                 # all 47 tests
+.\scripts\test.ps1                 # all 138 tests
 .\scripts\test.ps1 -- -k scoring   # just the scoring tests
 .\scripts\test.ps1 -- -v           # verbose
 ```
@@ -80,9 +80,13 @@ live in `tests/conftest.py`:
 
 | Fixture | What it gives you |
 |---|---|
-| `app` | A configured app on a throwaway database |
-| `client` | Flask test client for HTTP-level tests |
-| `round_words` | A ready-made round of `cat` and `house` |
+| `app` | A configured app on a throwaway database, with one profile already created |
+| `player_id` | The id of that default profile |
+| `other_player_id` | A second profile, for isolation tests |
+| `client` | Flask test client, already signed in as `player_id` |
+| `make_client` | Builds a client signed in as a specific profile, for tests with two clients at once |
+| `raw_client` | A client with an active profile but no CSRF token, for the rejection path |
+| `round_words` | A ready-made round of `cat` and `house`, owned by `player_id` |
 
 ## How the code is arranged
 
@@ -92,12 +96,14 @@ config.py     Config / TestConfig, every value from an environment variable
 routes/
   pages.py    HTML pages
   api.py      JSON API — parses and validates input, nothing else
+  players.py  The "who's playing?" picker: create, select, delete a profile
 game.py       Game rules: start, check, hint, skip, summarise
 scoring.py    Points, hint cost, star thresholds
 words.py      Built-in word pool: loading, weighted selection, scrambling
 wordlists.py  Parent-supplied vocabulary lists
 database.py   All SQL, behind a connection() context manager
 auth.py       Cloudflare Access gate (off by default)
+players.py    session['player_id']: the active profile, not a login
 security.py   CSRF tokens
 templates/    Jinja2
 static/js/    game.js, csrf.js, sfx.js, sparkles.js, start-round.js
@@ -196,9 +202,29 @@ Add the table or column to `_SCHEMA` in `database.py` (everything uses
 databases next to the `wrong_attempts` migration in `init_db()`. There is no
 migration framework — at this size, that's a feature.
 
+If a migration adds a column that a later statement in `_SCHEMA` depends on
+(an index, for instance), that statement has to move out of `_SCHEMA` and run
+after the `ALTER TABLE`, in `init_db()` — `_SCHEMA` only runs `CREATE TABLE/
+INDEX IF NOT EXISTS`, which is a no-op against a table that already exists
+without the new column. `idx_rounds_player` is the example to copy.
+
+If the column can't just be added — SQLite can't `ALTER` a primary key, which
+is why `word_stats` gained a composite `(player_id, word)` key instead of a
+bare `word` one — rebuild the table inside the same transaction: create the
+new shape under a temporary name, `INSERT INTO ... SELECT` the old rows across
+attributing them sensibly, `DROP` the old table, `RENAME` the new one into
+place. See the `word_stats` migration in `init_db()` for the full pattern.
+
+Every query that touches `rounds`, `round_words` or `word_stats` takes a
+`player_id` and filters or attributes by it — that's the whole isolation
+mechanism between profiles. A new query that forgets the filter is a data leak
+between players, not just a style nit.
+
 ### Add a page
 
-1. A route in `routes/pages.py`
+1. A route in `routes/pages.py`. Start it with
+   `redirect_response = players.require_player(); if redirect_response: return redirect_response`
+   unless the page is deliberately profile-agnostic like `/progress`.
 2. A template extending `base.html`
 3. A nav link in `base.html`, using `url_for('pages.<name>')` rather than a
    hardcoded path
@@ -206,13 +232,18 @@ migration framework — at this size, that's a feature.
 ### Add an API endpoint
 
 Put the rule in `game.py` and a thin wrapper in `routes/api.py` that validates
-input and returns JSON. Two rules:
+input and returns JSON. Three rules:
 
 - **Never return an unsolved word's answer.** `game._presented()` controls the
   shape sent to the client, and `test_round_state_does_not_leak_the_answer`
   fails if a field sneaks in.
 - **Never trust a number from the client.** Ids and sizes go through the
   validation helpers in `routes/api.py`.
+- **Check the round or round word belongs to the active player** before doing
+  anything with it, using `game.player_owns_round()` /
+  `game.player_owns_round_word()`. This is what stops one profile from
+  reading or mutating another's round by guessing an id — see
+  `tests/test_players.py`.
 
 ## Frontend notes
 

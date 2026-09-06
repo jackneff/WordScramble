@@ -2,12 +2,17 @@
 from flask import Blueprint, current_app, jsonify, request
 
 import game
+import players
 
 bp = Blueprint("api", __name__, url_prefix="/api")
 
 
 def _not_found(what):
     return jsonify({"error": what + " not found"}), 404
+
+
+def _no_player():
+    return jsonify({"error": "No active profile"}), 400
 
 
 def _payload():
@@ -25,6 +30,10 @@ def _round_word_id(data):
 
 @bp.post("/start")
 def start():
+    player_id = players.current_player_id()
+    if player_id is None:
+        return _no_player()
+
     data = _payload()
     sizes = current_app.config["ROUND_SIZES"]
     try:
@@ -40,7 +49,7 @@ def start():
 
     word_list = data.get("word_list") or None
 
-    round_id, words = game.start_round(round_size, mode, word_list)
+    round_id, words = game.start_round(round_size, player_id, mode, word_list)
     if round_id is None:
         return jsonify({"error": "That word list is no longer available"}), 404
     return jsonify({"round_id": round_id, "words": words})
@@ -48,6 +57,9 @@ def start():
 
 @bp.get("/round/<int:round_id>")
 def round_state(round_id):
+    player_id = players.current_player_id()
+    if player_id is None or not game.player_owns_round(player_id, round_id):
+        return _not_found("Round")
     state = game.get_round_state(round_id)
     if not state:
         return _not_found("Round")
@@ -58,7 +70,10 @@ def round_state(round_id):
 def check():
     data = _payload()
     round_word_id = _round_word_id(data)
-    if round_word_id is None:
+    player_id = players.current_player_id()
+    if round_word_id is None or player_id is None:
+        return _not_found("Word")
+    if not game.player_owns_round_word(player_id, round_word_id):
         return _not_found("Word")
 
     try:
@@ -75,8 +90,12 @@ def check():
 @bp.post("/skip")
 def skip():
     round_word_id = _round_word_id(_payload())
-    if round_word_id is None:
+    player_id = players.current_player_id()
+    if round_word_id is None or player_id is None:
         return _not_found("Word")
+    if not game.player_owns_round_word(player_id, round_word_id):
+        return _not_found("Word")
+
     result = game.skip_word(round_word_id)
     if result is None:
         return _not_found("Word")
@@ -87,7 +106,10 @@ def skip():
 def hint():
     data = _payload()
     round_word_id = _round_word_id(data)
-    if round_word_id is None:
+    player_id = players.current_player_id()
+    if round_word_id is None or player_id is None:
+        return _not_found("Word")
+    if not game.player_owns_round_word(player_id, round_word_id):
         return _not_found("Word")
 
     filled = data.get("filled_positions") or []

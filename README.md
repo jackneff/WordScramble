@@ -11,16 +11,23 @@ drawing; I vectorised it.
 
 <table>
 <tr>
+<td width="50%"><img src="docs/screenshots/08-players.png" alt="Choosing a profile on the Who's Playing? picker"></td>
 <td width="50%"><img src="docs/screenshots/02-gameplay.png" alt="Unscrambling a word"></td>
-<td width="50%"><img src="docs/screenshots/03-correct.png" alt="Correct answer celebration"></td>
 </tr>
 <tr>
+<td><img src="docs/screenshots/03-correct.png" alt="Correct answer celebration"></td>
 <td><img src="docs/screenshots/04-summary.png" alt="Round complete summary"></td>
+</tr>
+<tr>
 <td><img src="docs/screenshots/05-challenge-words.png" alt="Challenge words tracking"></td>
+<td><img src="docs/screenshots/06-my-scores.png" alt="Score history"></td>
 </tr>
 <tr>
 <td><img src="docs/screenshots/07-word-lists.png" alt="Adding this week's spelling words"></td>
-<td><img src="docs/screenshots/06-my-scores.png" alt="Score history"></td>
+<td><img src="docs/screenshots/09-progress.png" alt="The read-only parent progress dashboard"></td>
+</tr>
+<tr>
+<td colspan="2"><img src="docs/screenshots/10-progress-detail.png" alt="One profile's game history and challenge words in the parent dashboard"></td>
 </tr>
 </table>
 

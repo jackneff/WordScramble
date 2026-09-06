@@ -97,9 +97,10 @@ scoring.py    Points, hint cost, star thresholds
 words.py      Built-in word pool: loading, weighted selection, scrambling
 wordlists.py  Parent-supplied vocabulary lists
 database.py   All SQL, behind a connection() context manager
-auth.py       Optional shared-PIN gate
+auth.py       Cloudflare Access gate (off by default)
+security.py   CSRF tokens
 templates/    Jinja2
-static/js/    game.js, sfx.js, sparkles.js, start-round.js
+static/js/    game.js, csrf.js, sfx.js, sparkles.js, start-round.js
 static/words/ words_3.txt ... words_8.txt
 tests/        pytest suite
 ```

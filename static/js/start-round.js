@@ -15,7 +15,7 @@ function roundStarter() {
             try {
                 const res = await fetch('/api/start', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: jsonHeaders(),
                     body: JSON.stringify({
                         round_size: size,
                         mode,

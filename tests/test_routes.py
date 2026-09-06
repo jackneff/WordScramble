@@ -1,4 +1,7 @@
-"""HTTP layer: pages render, the API validates its input, the PIN gate works."""
+"""HTTP layer: pages render and the API validates its input.
+
+Access control lives in test_auth.py; CSRF in test_security.py.
+"""
 import pytest
 
 import database as db
@@ -58,29 +61,3 @@ def test_playing_a_round_end_to_end(client, app):
     assert db.get_round(round_id)["finished_at"] is not None
     assert client.get(f"/summary/{round_id}").status_code == 200
     assert len(db.get_history()) == 1
-
-
-# --- optional PIN gate ----------------------------------------------------
-
-@pytest.fixture
-def locked_client(tmp_path):
-    class Locked(TestConfig):
-        DB_PATH = str(tmp_path / "locked.db")
-        ACCESS_PIN = "1234"
-
-    return create_app(Locked).test_client()
-
-
-def test_pin_gate_redirects_pages_and_401s_the_api(locked_client):
-    assert locked_client.get("/").status_code == 302
-    assert locked_client.post("/api/start", json={}).status_code == 401
-
-
-def test_the_right_pin_unlocks_the_app(locked_client):
-    assert locked_client.post("/login", data={"pin": "1234"}).status_code == 302
-    assert locked_client.get("/").status_code == 200
-
-
-def test_the_wrong_pin_does_not(locked_client):
-    assert locked_client.post("/login", data={"pin": "0000"}).status_code == 401
-    assert locked_client.get("/").status_code == 302

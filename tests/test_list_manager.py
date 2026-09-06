@@ -201,13 +201,19 @@ def test_the_manage_page_works_with_no_lists(client, lists_dir):
     assert "No lists yet" in body
 
 
-def test_the_manager_is_behind_the_pin_gate(tmp_path):
+def test_the_manager_is_behind_the_access_gate(tmp_path, monkeypatch):
+    """Reading, writing and deleting lists all require Cloudflare Access."""
+    monkeypatch.setenv("SECRET_KEY", "not-the-dev-default")
+
     class Locked(TestConfig):
         DB_PATH = str(tmp_path / "locked.db")
-        ACCESS_PIN = "1234"
+        SECRET_KEY = "not-the-dev-default"
+        AUTH_MODE = "cloudflare"
+        CF_ACCESS_TEAM = "example"
+        CF_ACCESS_AUD = "aud-tag"
 
     client = create_app(Locked).test_client()
 
-    assert client.get("/lists").status_code == 302
-    assert client.post("/lists", data={"name": "X", "words": "planet"}).status_code == 302
-    assert client.post("/lists/x/delete").status_code == 302
+    assert client.get("/lists").status_code == 403
+    assert client.post("/lists", data={"name": "X", "words": "planet"}).status_code == 403
+    assert client.post("/lists/x/delete").status_code == 403

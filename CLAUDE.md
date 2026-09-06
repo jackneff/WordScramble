@@ -30,8 +30,8 @@ Scripts live in `scripts/`, paired `.sh` and `.ps1`. Keep both in step when
 changing one.
 
 Full guides: `docs/DEVELOPMENT.md` (setup, testing, common changes) and
-`docs/DEPLOYMENT.md` (droplet, gunicorn, systemd, nginx, backups). Update them when
-the workflow changes.
+`docs/DEPLOYMENT.md` (droplet, gunicorn, systemd, Cloudflare Access, tunnel,
+backups). Update them when the workflow changes.
 
 ## Architecture
 
@@ -44,7 +44,8 @@ scoring.py    Points, hint cost, star thresholds
 words.py      Built-in word pool: loading, weighted selection, scrambling
 wordlists.py  Parent-supplied vocabulary lists (static/words/lists/*.txt)
 database.py   All SQL; connection() context manager commits/rolls back/closes
-auth.py       Optional shared-PIN gate, enabled by setting ACCESS_PIN
+auth.py       Cloudflare Access gate, enabled by AUTH_MODE=cloudflare
+security.py   CSRF tokens on every state-changing request
 ```
 
 Layering rule: **routes → game → database**. Routes never contain SQL or game
@@ -69,6 +70,10 @@ rules; `game.py` never touches `request` or `render_template`.
 - Sound via `playSfx(name)`; register files with `loadSounds()` in `base.html`
 - Config comes from environment variables via `config.py` — never hardcode
   paths, secrets, or debug flags
+- Every new POST/PUT/PATCH/DELETE needs a CSRF token: a hidden `csrf_token`
+  field in the form, or `jsonHeaders()` from `static/js/csrf.js` for fetch
+- Never exempt a route from the auth guard in `auth.py` without a written
+  reason; `/static` is gated too, because `LISTS_DIR` can live under it
 
 ## Testing
 
@@ -81,7 +86,8 @@ when changing the challenge-word logic, `tests/test_word_stats.py`.
 See `docs/DEPLOYMENT.md` for the full procedure. The essentials:
 
 - `FLASK_DEBUG` must stay off in production (Werkzeug debugger = RCE)
-- Set `SECRET_KEY` and `ACCESS_PIN` in `.env` (never committed)
+- Set `SECRET_KEY`, `AUTH_MODE=cloudflare`, `CF_ACCESS_TEAM` and `CF_ACCESS_AUD`
+  in `.env` (never committed); `create_app` refuses to boot without them
 - Point `DB_PATH` outside the app directory so redeploys don't wipe scores
 - SQLite is a deliberate choice for this workload - see the README. Enable WAL
   and run gunicorn with one worker and several threads

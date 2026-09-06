@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Scramble - Not signed in</title>
+    <!--
+      Deliberately standalone: /static is behind the same guard, so extending
+      base.html would leave this page unstyled for exactly the visitors who see
+      it. No detail about why the check failed - that goes to the log.
+    -->
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0f0e2e;
+            color: #fff;
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+            text-align: center;
+        }
+        .card {
+            background: #232060;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 1rem;
+            padding: 2.5rem;
+            max-width: 26rem;
+            margin: 1rem;
+        }
+        h1 { margin: 0 0 0.75rem; font-size: 1.75rem; }
+        p { margin: 0; color: #b6b3e0; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Not signed in</h1>
+        <p>
+            This game is only reachable through its Cloudflare sign-in.
+            Open it from the usual link and sign in with an approved email
+            address.
+        </p>
+    </div>
+</body>
+</html>

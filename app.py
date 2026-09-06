@@ -3,20 +3,20 @@
 Run locally with `python app.py`; serve in production through `wsgi.py`.
 """
 import os
-from datetime import timedelta
 
 from flask import Flask, flash, redirect, url_for
 
 import auth
 import database as db
-from config import Config
+import security
+from config import AUTH_CLOUDFLARE, DEV_SECRET_KEY, Config
 from routes import api_bp, lists_bp, pages_bp
 
 
 def create_app(config_object=Config):
     app = Flask(__name__)
     app.config.from_object(config_object)
-    app.permanent_session_lifetime = timedelta(days=30)
+    _check_deployment(app)
 
     db.configure(app.config["DB_PATH"])
     db.init_db()
@@ -24,11 +24,51 @@ def create_app(config_object=Config):
     app.register_blueprint(pages_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(lists_bp)
-    app.register_blueprint(auth.bp)
+
+    # Order matters: before_request hooks run in registration order, so an
+    # unauthenticated request should be turned away as unauthenticated rather
+    # than told its CSRF token is missing.
     auth.register_guard(app)
+    security.register_csrf(app)
     _register_error_handlers(app)
 
     return app
+
+
+def _check_deployment(app):
+    """Refuse to start in a configuration that looks deployed but unprotected.
+
+    Every one of these used to be a silent downgrade - the app would come up
+    happily with a published signing key or with no authentication at all. A
+    misconfigured deployment should fail loudly at boot instead.
+    """
+    exposed = app.config["SESSION_COOKIE_SECURE"]
+    cloudflare = app.config["AUTH_MODE"] == AUTH_CLOUDFLARE
+
+    if app.config["SECRET_KEY"] == DEV_SECRET_KEY and (exposed or cloudflare):
+        raise RuntimeError(
+            "SECRET_KEY is still the development default. Set it in .env:\n"
+            '  python -c "import secrets; print(secrets.token_hex(32))"'
+        )
+
+    if cloudflare:
+        missing = [
+            name
+            for name in ("CF_ACCESS_TEAM", "CF_ACCESS_AUD")
+            if not app.config.get(name)
+        ]
+        if missing:
+            raise RuntimeError(
+                "AUTH_MODE=cloudflare requires {}. Find them in the Cloudflare "
+                "Zero Trust dashboard under Access > Applications.".format(
+                    " and ".join(missing)
+                )
+            )
+    elif exposed:
+        raise RuntimeError(
+            "SESSION_COOKIE_SECURE is on but AUTH_MODE is 'none', which would "
+            "publish the app with no authentication. Set AUTH_MODE=cloudflare."
+        )
 
 
 def _register_error_handlers(app):

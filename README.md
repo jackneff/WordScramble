@@ -80,7 +80,7 @@ topping up with ordinary words when it's short.
 - Automatic challenge-word tracking with a dedicated round mode
 - History of every completed round
 - Rounds resume where you left off if the page is reloaded
-- Optional PIN gate for hosting somewhere public
+- Cloudflare Access gate for hosting somewhere public
 
 ## Architecture
 
@@ -93,7 +93,8 @@ scoring.py    Points, hint cost, star thresholds
 words.py      Built-in word pool: loading, weighted selection, scrambling
 wordlists.py  Parent-supplied vocabulary lists, read fresh on every request
 database.py   All SQL, behind a connection() context manager
-auth.py       Optional shared-PIN gate
+auth.py       Cloudflare Access gate (off by default, for local dev)
+security.py   CSRF tokens for state-changing requests
 ```
 
 Three decisions shape it:
@@ -135,17 +136,18 @@ operational overhead with nothing to show for it at this scale.
 ./scripts/test.sh          # Windows: .\scripts\test.ps1
 ```
 
-104 tests covering the scoring rules, word selection, the hint and skip flows,
+124 tests covering the scoring rules, word selection, the hint and skip flows,
 challenge-word graduation, custom word lists and their upload path (including
-traversal attempts and oversized bodies), history paging, and the HTTP layer
-including the PIN gate. Each test runs against its own throwaway SQLite file.
+traversal attempts and oversized bodies), history paging, the HTTP layer, CSRF
+rejection, and the Cloudflare Access gate (expired, forged and wrong-audience
+tokens). Each test runs against its own throwaway SQLite file.
 
 ## Documentation
 
 - **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** — setup, running, testing, and how to
   change words, scoring or the schema
-- **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** — gunicorn, systemd, nginx, HTTPS and
-  backups on a DigitalOcean droplet
+- **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** — gunicorn, systemd, Cloudflare
+  Access, the tunnel and backups on a DigitalOcean droplet
 - **[CLAUDE.md](CLAUDE.md)** — conventions this codebase holds itself to
 
 ## Credits

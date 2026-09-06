@@ -174,7 +174,7 @@ function game(roundId) {
         async post(url, body) {
             const res = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: jsonHeaders(),
                 body: JSON.stringify(body),
             });
             return res.ok ? res.json() : null;

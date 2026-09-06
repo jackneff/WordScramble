@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}Word Scramble{% endblock %}</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -26,6 +27,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='images/creature.svg') }}" type="image/svg+xml">
 
+    <script src="{{ url_for('static', filename='js/csrf.js') }}"></script>
     <script src="{{ url_for('static', filename='js/sfx.js') }}"></script>
     <script src="{{ url_for('static', filename='js/sparkles.js') }}"></script>
     <script>

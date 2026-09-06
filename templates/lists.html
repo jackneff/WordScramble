@@ -13,6 +13,8 @@
     <form method="post" enctype="multipart/form-data" action="{{ url_for('lists.save') }}"
           class="game-card p-6 md:p-8 w-full max-w-lg mb-10">
 
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
         <label for="name" class="block text-[var(--glow-blue)] font-semibold mb-2">
             List name
         </label>
@@ -96,6 +98,7 @@
                 <form method="post"
                       action="{{ url_for('lists.delete', slug=list.slug) }}"
                       onsubmit="return confirm('Delete {{ list.name }}? Past scores keep the name.');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit"
                             aria-label="Delete {{ list.name }}"
                             class="py-2 px-4 rounded-xl font-semibold text-[var(--text-muted)]

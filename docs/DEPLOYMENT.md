@@ -263,15 +263,27 @@ Daily at 03:00, via `sudo crontab -e`:
 
 ## Updating
 
+Deploying a new version is `scripts/deploy.sh`, run on the droplet:
+
 ```bash
-cd /srv/wordscramble
-git pull
-.venv/bin/pip install -r requirements.txt --quiet
-sudo systemctl restart wordscramble
+/srv/wordscramble/scripts/deploy.sh --check   # what would deploy; changes nothing
+/srv/wordscramble/scripts/deploy.sh           # deploy origin/main
+/srv/wordscramble/scripts/deploy.sh --ref v1.2
 ```
 
+It backs the database up before touching anything, refuses to run if the tree
+on the server has been edited in place, installs dependencies, restarts the
+unit, and then checks that the app came back — printing the last 30 log lines
+if it didn't. A healthy deployment ends with `http 403`, because an
+unauthenticated request from the droplet itself is exactly what Cloudflare
+Access should refuse.
+
+It reads `DB_PATH` from `.env` and the bind address from the systemd unit, so
+there is nothing to keep in step. Override `APP_DIR`, `SERVICE`, `DB_PATH` or
+`BACKUP_DIR` in the environment if your layout differs.
+
 Schema changes apply themselves on startup — `init_db()` runs from the app
-factory. Take a backup first if the release touches the schema.
+factory.
 
 ## Checking on it
 

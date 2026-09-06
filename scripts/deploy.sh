@@ -76,15 +76,26 @@ else
     git --no-pager log --oneline HEAD.."$REF" | sed 's/^/    /'
 fi
 
-# A dirty tree means someone edited the server in place; stop rather than
-# silently discarding it.
-if [[ -n "$(git status --porcelain)" ]]; then
+# Edits to tracked files mean someone changed the server in place; stop rather
+# than discarding them. Untracked strays are only ever reported - a deploy never
+# touches them, so they are not a reason to refuse to run.
+TRACKED_CHANGES=$(git status --porcelain --untracked-files=no)
+UNTRACKED=$(git ls-files --others --exclude-standard)
+
+if [[ -n "$UNTRACKED" ]]; then
     echo
-    git --no-pager status --short | sed 's/^/    /'
+    echo "  untracked files in $APP_DIR (left alone by this deploy):"
+    printf '%s\n' "$UNTRACKED" | sed 's/^/    /'
+fi
+
+if [[ -n "$TRACKED_CHANGES" ]]; then
     echo
-    echo "  M = a tracked file was edited on the server; ?? = an untracked stray."
-    echo "  A deploy never touches untracked files, so if that is all you see:"
-    echo "    git status --porcelain | grep -v '^??'   # empty means it is safe to ignore"
+    printf '%s\n' "$TRACKED_CHANGES" | sed 's/^/    /'
+    echo
+    echo "  These are tracked files edited on the server. Either keep them:"
+    echo "    git -C $APP_DIR diff            # see what changed"
+    echo "  or discard them:"
+    echo "    git -C $APP_DIR checkout -- ."
     fail "the working tree on the server has local changes - resolve them first"
 fi
 
